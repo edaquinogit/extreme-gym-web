@@ -1,6 +1,10 @@
 import { ApiStatus } from '../components/ApiStatus'
 
-export function HomePage() {
+type HomePageProps = {
+  onOpenAlunos: () => void
+}
+
+export function HomePage({ onOpenAlunos }: HomePageProps) {
   return (
     <main className="home-page">
       <section className="home-hero">
@@ -11,6 +15,9 @@ export function HomePage() {
           com o backend Spring Boot local.
         </p>
         <ApiStatus />
+        <button className="primary-button" type="button" onClick={onOpenAlunos}>
+          Ver alunos
+        </button>
       </section>
     </main>
   )

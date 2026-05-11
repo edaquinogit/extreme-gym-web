@@ -22,13 +22,16 @@ async function request<TResponse>(
   options: HttpRequestOptions = {},
 ): Promise<TResponse> {
   const { body, headers, method = 'GET', ...fetchOptions } = options
+  const requestHeaders = new Headers(headers)
+
+  if (body !== undefined && !requestHeaders.has('Content-Type')) {
+    requestHeaders.set('Content-Type', 'application/json')
+  }
+
   const response = await fetch(`${API_URL}${normalizePath(path)}`, {
     ...fetchOptions,
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
+    headers: requestHeaders,
     body: body === undefined ? undefined : JSON.stringify(body),
   })
 
