@@ -37,7 +37,7 @@ export function PagamentosPage() {
                 <td>{formatCurrency(pagamento.valor)}</td>
                 <td><span className="status-badge">{pagamento.status}</span></td>
                 <td>{formatDate(pagamento.dataVencimento)}</td>
-                <td>{formatDate(pagamento.dataPagamento)}</td>
+                <td>{formatDate(pagamento.dataPagamento ?? undefined)}</td>
               </tr>
             ))}
           </DataTable>

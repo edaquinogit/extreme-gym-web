@@ -1,6 +1,8 @@
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { useAuth } from '../../hooks/useAuth'
+import { AcessoPage } from '../../pages/Acesso/AcessoPage'
 import { AlunosPage } from '../../pages/Alunos/AlunosPage'
+import { CatracaPage } from '../../pages/Catraca/CatracaPage'
 import { CheckinsPage } from '../../pages/Checkins/CheckinsPage'
 import { DashboardPage } from '../../pages/Dashboard/DashboardPage'
 import { LoginPage } from '../../pages/Login/LoginPage'
@@ -26,6 +28,10 @@ export function AppRoutes() {
     return <LoginPage />
   }
 
+  if (path === appPaths.catraca) {
+    return <CatracaPage />
+  }
+
   return <AdminLayout>{renderPrivatePage(path)}</AdminLayout>
 }
 
@@ -44,6 +50,8 @@ function renderPrivatePage(path: string) {
       return <PagamentosPage />
     case appPaths.checkins:
       return <CheckinsPage />
+    case appPaths.acessos:
+      return <AcessoPage />
     default:
       return <DashboardPage />
   }

@@ -8,3 +8,9 @@ export type Aluno = {
   status: StatusAluno
   dataCadastro: string
 }
+
+export type AlunoRequestDTO = {
+  nome: string
+  email: string
+  telefone: string
+}

@@ -7,6 +7,8 @@ export const appPaths = {
   matriculas: '/matriculas',
   pagamentos: '/pagamentos',
   checkins: '/checkins',
+  acessos: '/acessos',
+  catraca: '/catraca',
 } as const
 
 export type AppPath = (typeof appPaths)[keyof typeof appPaths]
@@ -19,4 +21,6 @@ export const privatePaths: AppPath[] = [
   appPaths.matriculas,
   appPaths.pagamentos,
   appPaths.checkins,
+  appPaths.acessos,
+  appPaths.catraca,
 ]

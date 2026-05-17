@@ -10,6 +10,8 @@ const navigationItems = [
   { compactLabel: 'M', label: 'Matriculas', path: appPaths.matriculas },
   { compactLabel: '$', label: 'Pagamentos', path: appPaths.pagamentos },
   { compactLabel: 'C', label: 'Check-ins', path: appPaths.checkins },
+  { compactLabel: 'A', label: 'Acesso', path: appPaths.acessos },
+  { compactLabel: '⬡', label: 'Catraca', path: appPaths.catraca },
 ]
 
 type AdminLayoutProps = {
