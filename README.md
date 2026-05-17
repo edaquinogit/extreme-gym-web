@@ -100,6 +100,8 @@ O login envia:
 
 A resposta esperada deve conter `token` e `type: "Bearer"`. O frontend tambem aceita `accessToken` ou `jwt` por compatibilidade.
 
+Tambem existe a opcao `Criar usuario`, que chama `POST /auth/register` e autentica automaticamente quando o backend retornar o token. Esse fluxo e indicado apenas para ambiente de desenvolvimento enquanto o cadastro publico estiver habilitado na API.
+
 Credenciais de desenvolvimento:
 
 ```text
