@@ -1,17 +1,12 @@
-import { useState } from 'react'
-import { HomePage } from './pages/HomePage'
-import { AlunosPage } from './pages/AlunosPage'
-
-type AppPage = 'home' | 'alunos'
+import { AppProvider } from './app/providers/AppProvider'
+import { AppRoutes } from './app/routes/AppRoutes'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<AppPage>('home')
-
-  if (currentPage === 'alunos') {
-    return <AlunosPage onBack={() => setCurrentPage('home')} />
-  }
-
-  return <HomePage onOpenAlunos={() => setCurrentPage('alunos')} />
+  return (
+    <AppProvider>
+      <AppRoutes />
+    </AppProvider>
+  )
 }
 
 export default App
