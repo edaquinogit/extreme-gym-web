@@ -14,6 +14,13 @@ export type LoginCredentials = {
   password: string
 }
 
+export type RegisterCredentials = {
+  nome: string
+  email: string
+  senha: string
+  role?: 'ADMIN' | 'RECEPCAO' | 'PROFESSOR' | 'ALUNO' | 'CATRACA'
+}
+
 export type LoginResponse = {
   token?: string
   accessToken?: string

@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { authService } from '../services/authService'
-import type { AuthUser, LoginCredentials } from '../types/auth'
+import type { AuthUser, LoginCredentials, RegisterCredentials } from '../types/auth'
 import {
   clearAuthStorage,
   getStoredToken,
@@ -48,6 +48,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  const register = useCallback(async (credentials: RegisterCredentials) => {
+    setIsLoading(true)
+
+    try {
+      const auth = await authService.register(credentials)
+
+      setStoredToken(auth.token)
+      setStoredUser(auth.user)
+      setToken(auth.token)
+      setUser(auth.user)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     window.addEventListener('auth:unauthorized', logout)
 
@@ -63,9 +78,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: Boolean(token),
       isLoading,
       login,
+      register,
       logout,
     }),
-    [isLoading, login, logout, token, user],
+    [isLoading, login, logout, register, token, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
