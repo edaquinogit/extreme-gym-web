@@ -4,12 +4,12 @@ import { navigateTo, useCurrentPath } from '../../app/routes/router'
 import { useAuth } from '../../hooks/useAuth'
 
 const navigationItems = [
-  { label: 'Dashboard', path: appPaths.dashboard },
-  { label: 'Alunos', path: appPaths.alunos },
-  { label: 'Planos', path: appPaths.planos },
-  { label: 'Matriculas', path: appPaths.matriculas },
-  { label: 'Pagamentos', path: appPaths.pagamentos },
-  { label: 'Check-ins', path: appPaths.checkins },
+  { compactLabel: 'D', label: 'Dashboard', path: appPaths.dashboard },
+  { compactLabel: 'A', label: 'Alunos', path: appPaths.alunos },
+  { compactLabel: 'P', label: 'Planos', path: appPaths.planos },
+  { compactLabel: 'M', label: 'Matriculas', path: appPaths.matriculas },
+  { compactLabel: '$', label: 'Pagamentos', path: appPaths.pagamentos },
+  { compactLabel: 'C', label: 'Check-ins', path: appPaths.checkins },
 ]
 
 type AdminLayoutProps = {
@@ -18,6 +18,7 @@ type AdminLayoutProps = {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const currentPath = useCurrentPath()
   const { logout, user } = useAuth()
 
@@ -32,15 +33,51 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   const userLabel = user?.nome ?? user?.name ?? user?.email ?? user?.username ?? 'Admin'
+  const sidebarClassName = [
+    'admin-sidebar',
+    isMenuOpen ? 'is-open' : '',
+    isSidebarCollapsed ? 'is-collapsed' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <div className="admin-layout">
-      <aside className={`admin-sidebar ${isMenuOpen ? 'is-open' : ''}`}>
-        <div className="brand-block">
+    <div className={`admin-layout ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+      <button
+        className={`sidebar-overlay ${isMenuOpen ? 'is-visible' : ''}`}
+        type="button"
+        aria-label="Fechar menu"
+        onClick={() => setIsMenuOpen(false)}
+      />
+
+      <aside className={sidebarClassName}>
+        <div className="sidebar-top">
+          <div className="brand-block">
+            <span className="brand-mark">EG</span>
+            <div className="brand-copy">
+              <strong>Extreme Gym</strong>
+              <small>Painel administrativo</small>
+            </div>
+          </div>
+
+          <button
+            className="icon-button sidebar-toggle"
+            type="button"
+            aria-label={isSidebarCollapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
+            aria-pressed={isSidebarCollapsed}
+            onClick={() => setIsSidebarCollapsed((isCollapsed) => !isCollapsed)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+
+        <div className="brand-block mobile-brand">
           <span className="brand-mark">EG</span>
-          <div>
+          <div className="brand-copy">
             <strong>Extreme Gym</strong>
-            <small>Admin Web</small>
+            <small>Painel administrativo</small>
           </div>
         </div>
 
@@ -49,10 +86,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <button
               className={currentPath === item.path ? 'nav-link is-active' : 'nav-link'}
               key={item.path}
+              title={item.label}
               type="button"
               onClick={() => handleNavigate(item.path)}
             >
-              {item.label}
+              <span className="nav-icon" aria-hidden="true">
+                {item.compactLabel}
+              </span>
+              <span className="nav-label">{item.label}</span>
             </button>
           ))}
         </nav>
@@ -60,16 +101,24 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       <div className="admin-main">
         <header className="admin-header">
-          <button
-            className="icon-button menu-button"
-            type="button"
-            aria-label="Abrir menu"
-            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
+          <div className="header-start">
+            <button
+              className="icon-button menu-button"
+              type="button"
+              aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+
+            <div className="header-context">
+              <strong>Painel administrativo</strong>
+              <span>Operacao Extreme Gym</span>
+            </div>
+          </div>
 
           <div className="header-user">
             <span>{userLabel}</span>
