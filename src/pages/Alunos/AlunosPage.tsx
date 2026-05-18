@@ -40,7 +40,7 @@ export function AlunosPage() {
       <PageHeader
         eyebrow="Alunos"
         title="Alunos cadastrados"
-        description="Lista preparada para busca, estados de carregamento e integracao direta com /alunos."
+        description="Gerencie dados de contato e status operacional dos alunos."
         action={<button className="primary-button compact" type="button">Novo aluno</button>}
       />
 

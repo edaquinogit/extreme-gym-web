@@ -4,14 +4,14 @@ import { navigateTo, useCurrentPath } from '../../app/routes/router'
 import { useAuth } from '../../hooks/useAuth'
 
 const navigationItems = [
-  { compactLabel: 'D', label: 'Dashboard', path: appPaths.dashboard },
-  { compactLabel: 'A', label: 'Alunos', path: appPaths.alunos },
-  { compactLabel: 'P', label: 'Planos', path: appPaths.planos },
-  { compactLabel: 'M', label: 'Matriculas', path: appPaths.matriculas },
-  { compactLabel: '$', label: 'Pagamentos', path: appPaths.pagamentos },
-  { compactLabel: 'C', label: 'Check-ins', path: appPaths.checkins },
-  { compactLabel: 'A', label: 'Acesso', path: appPaths.acessos },
-  { compactLabel: '⬡', label: 'Catraca', path: appPaths.catraca },
+  { compactLabel: 'IN', label: 'Inicio', path: appPaths.dashboard },
+  { compactLabel: 'AL', label: 'Alunos', path: appPaths.alunos },
+  { compactLabel: 'PL', label: 'Planos', path: appPaths.planos },
+  { compactLabel: 'MA', label: 'Matriculas', path: appPaths.matriculas },
+  { compactLabel: 'PG', label: 'Pagamentos', path: appPaths.pagamentos },
+  { compactLabel: 'CH', label: 'Check-ins', path: appPaths.checkins },
+  { compactLabel: 'AC', label: 'Acesso', path: appPaths.acessos },
+  { compactLabel: 'CA', label: 'Catraca', path: appPaths.catraca },
 ]
 
 type AdminLayoutProps = {
@@ -35,6 +35,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   const userLabel = user?.nome ?? user?.name ?? user?.email ?? user?.username ?? 'Admin'
+  const userInitials = userLabel
+    .split(/[\s@]/)[0]
+    .split('')
+    .slice(0, 2)
+    .map((char) => char.toUpperCase())
+    .join('')
   const sidebarClassName = [
     'admin-sidebar',
     isMenuOpen ? 'is-open' : '',
@@ -99,6 +105,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </button>
           ))}
         </nav>
+
+        <div className="sidebar-user-block">
+          <div className="sidebar-user-avatar">{userInitials}</div>
+          <div className="sidebar-user-info">
+            <strong>{userLabel}</strong>
+            <small>{user?.role ?? 'Admin'}</small>
+          </div>
+        </div>
       </aside>
 
       <div className="admin-main">

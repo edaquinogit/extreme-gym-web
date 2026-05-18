@@ -57,104 +57,124 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
-      <section className="login-panel">
-        <form className="login-form" onSubmit={handleSubmit}>
-          <div className="login-brand">
-            <span className="brand-mark">EG</span>
-            <div>
-              <strong>Extreme Gym</strong>
-              <small>Painel administrativo</small>
+      <div className="login-left-panel">
+        <div className="login-brand-mark">
+          <span className="brand-mark">EG</span>
+          <strong>ExtremeGym</strong>
+        </div>
+
+        <div className="login-hero">
+          <h2>Gestao moderna para academias que crescem</h2>
+          <ul className="login-hero-bullets">
+            <li>Controle de alunos, planos e matriculas</li>
+            <li>Pagamentos e inadimplencia em um so lugar</li>
+            <li>Check-in e validacao de acesso em tempo real</li>
+          </ul>
+        </div>
+
+        <footer className="login-left-footer">Extreme Gym · Painel administrativo</footer>
+      </div>
+
+      <div className="login-right-panel">
+        <section className="login-panel">
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="login-brand">
+              <span className="brand-mark">EG</span>
+              <div>
+                <strong>Extreme Gym</strong>
+                <small>Painel administrativo</small>
+              </div>
             </div>
-          </div>
 
-          <div className="auth-form-header">
-            <p className="eyebrow">{mode === 'register' ? 'Novo acesso' : 'Acesso seguro'}</p>
-            <h2>{mode === 'register' ? 'Criar acesso' : 'Entrar no painel'}</h2>
-            <p>
-              {mode === 'register'
-                ? 'Cadastre um novo usuario autorizado para o painel.'
-                : 'Acesse sua conta para acompanhar a operacao da academia.'}
-            </p>
-          </div>
+            <div className="auth-form-header">
+              <p className="eyebrow">{mode === 'register' ? 'Novo acesso' : 'Acesso seguro'}</p>
+              <h2>{mode === 'register' ? 'Criar acesso' : 'Entrar no painel'}</h2>
+              <p>
+                {mode === 'register'
+                  ? 'Cadastre um novo usuario autorizado para o painel.'
+                  : 'Acesse sua conta para acompanhar a operacao da academia.'}
+              </p>
+            </div>
 
-          <div className="auth-mode-switch" aria-label="Modo de autenticacao">
-            <button
-              className={mode === 'login' ? 'is-active' : ''}
-              type="button"
-              onClick={() => handleModeChange('login')}
-            >
-              Entrar
-            </button>
-            <button
-              className={mode === 'register' ? 'is-active' : ''}
-              type="button"
-              onClick={() => handleModeChange('register')}
-            >
-              Criar acesso
-            </button>
-          </div>
+            <div className="auth-mode-switch" aria-label="Modo de autenticacao">
+              <button
+                className={mode === 'login' ? 'is-active' : ''}
+                type="button"
+                onClick={() => handleModeChange('login')}
+              >
+                Entrar
+              </button>
+              <button
+                className={mode === 'register' ? 'is-active' : ''}
+                type="button"
+                onClick={() => handleModeChange('register')}
+              >
+                Criar acesso
+              </button>
+            </div>
 
-          {mode === 'register' && (
+            {mode === 'register' && (
+              <div>
+                <label htmlFor="name">Nome</label>
+                <input
+                  autoComplete="name"
+                  id="name"
+                  name="name"
+                  placeholder="Ex.: Administrador"
+                  required
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+            )}
+
             <div>
-              <label htmlFor="name">Nome</label>
+              <label htmlFor="username">Email ou usuario</label>
               <input
-                autoComplete="name"
-                id="name"
-                name="name"
-                placeholder="Ex.: Administrador"
+                autoComplete="username"
+                id="username"
+                name="username"
+                placeholder="admin@extremegym.com"
                 required
                 type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
               />
             </div>
-          )}
 
-          <div>
-            <label htmlFor="username">Email ou usuario</label>
-            <input
-              autoComplete="username"
-              id="username"
-              name="username"
-              placeholder="admin@extremegym.com"
-              required
-              type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-          </div>
+            <div>
+              <label htmlFor="password">Senha</label>
+              <input
+                autoComplete="current-password"
+                id="password"
+                name="password"
+                minLength={6}
+                placeholder="Informe sua senha"
+                required
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
 
-          <div>
-            <label htmlFor="password">Senha</label>
-            <input
-              autoComplete="current-password"
-              id="password"
-              name="password"
-              minLength={6}
-              placeholder="Informe sua senha"
-              required
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
+            {errorMessage && <p className="form-error">{errorMessage}</p>}
 
-          {errorMessage && <p className="form-error">{errorMessage}</p>}
+            <button className="primary-button" disabled={isLoading} type="submit">
+              {getSubmitLabel(mode, isLoading)}
+            </button>
 
-          <button className="primary-button" disabled={isLoading} type="submit">
-            {getSubmitLabel(mode, isLoading)}
-          </button>
+            {mode === 'register' && (
+              <p className="form-hint">
+                O cadastro publico deve ficar habilitado apenas em ambiente de
+                desenvolvimento ou configuracao inicial.
+              </p>
+            )}
 
-          {mode === 'register' && (
-            <p className="form-hint">
-              O cadastro publico deve ficar habilitado apenas em ambiente de
-              desenvolvimento ou configuracao inicial.
-            </p>
-          )}
-
-          <ApiStatus />
-        </form>
-      </section>
+            <ApiStatus />
+          </form>
+        </section>
+      </div>
     </main>
   )
 }

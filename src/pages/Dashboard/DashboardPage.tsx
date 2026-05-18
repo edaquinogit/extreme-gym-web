@@ -1,14 +1,32 @@
-import { PageHeader } from '../../components/ui/PageHeader'
+import { useAuth } from '../../hooks/useAuth'
+import { API_URL } from '../../config/api'
 import { dashboardSummary } from './dashboardSummary'
 
 export function DashboardPage() {
+  const { user } = useAuth()
+
+  const firstName = (() => {
+    const raw = user?.nome ?? user?.name ?? user?.username ?? user?.email ?? 'Admin'
+    return raw.split(/[\s@]/)[0]
+  })()
+
   return (
     <>
-      <PageHeader
-        eyebrow="Dashboard"
-        title="Visao geral da operacao"
-        description="Acompanhe os principais sinais da academia e acesse rapidamente as areas de gestao."
-      />
+      <section className="dashboard-welcome-banner">
+        <div className="dashboard-welcome-content">
+          <p className="page-kicker">BEM-VINDO</p>
+          <h1>Ola, {firstName}.</h1>
+          <p className="page-description">
+            Gerencie a operacao da academia com visibilidade centralizada
+            e fluxos integrados a API.
+          </p>
+        </div>
+        <div className="dashboard-welcome-badges">
+          <span className="welcome-badge is-role">{user?.role ?? 'ADMIN'}</span>
+          <span className="welcome-badge is-status">API conectada</span>
+          <span className="welcome-badge is-url">{API_URL}</span>
+        </div>
+      </section>
 
       <section className="dashboard-overview" aria-label="Resumo operacional">
         <article className="overview-panel">
