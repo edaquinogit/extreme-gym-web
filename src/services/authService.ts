@@ -40,7 +40,6 @@ export const authService = {
         nome: credentials.nome.trim(),
         email: credentials.email.trim(),
         senha: credentials.senha,
-        role: credentials.role ?? 'ADMIN',
       },
       {
         skipAuth: true,

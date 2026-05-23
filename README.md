@@ -93,28 +93,28 @@ O login envia:
 
 ```json
 {
-  "username": "admin@extremegym.com",
-  "password": "admin123"
+  "username": "admin@extremegym.local",
+  "password": "valor-definido-em-ADMIN_PASSWORD-ou-exibido-nos-logs-da-API"
 }
 ```
 
 A resposta esperada deve conter `token` e `type: "Bearer"`. O frontend tambem aceita `accessToken` ou `jwt` por compatibilidade.
 
-Tambem existe a opcao `Criar usuario`, que chama `POST /auth/register` e autentica automaticamente quando o backend retornar o token. Esse fluxo e indicado apenas para ambiente de desenvolvimento enquanto o cadastro publico estiver habilitado na API.
+Tambem existe a opcao `Criar usuario`, que chama `POST /auth/register` e autentica automaticamente quando o backend retornar o token. Esse fluxo e indicado apenas para ambiente de desenvolvimento enquanto o cadastro publico estiver habilitado na API com `AUTH_REGISTRATION_ENABLED=true`. O backend cria usuarios de registro publico com perfil `RECEPCAO`.
 
 Credenciais de desenvolvimento:
 
 ```text
-email: admin@extremegym.com
+email: admin@extremegym.local
 username: admin
-password: admin123
+password: defina ADMIN_PASSWORD antes de subir a API ou use a senha temporaria exibida nos logs
 role: ADMIN
 ```
 
 Fluxo manual esperado:
 
 1. Acesse `/login`.
-2. Informe `admin@extremegym.com` e `admin123`.
+2. Informe `admin@extremegym.local` e a senha configurada em `ADMIN_PASSWORD`.
 3. Confirme o redirecionamento para `/dashboard`.
 4. Recarregue a pagina e confira se a sessao permanece ativa.
 5. Clique em `Sair` e confirme o retorno para `/login`.

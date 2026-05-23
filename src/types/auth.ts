@@ -18,7 +18,6 @@ export type RegisterCredentials = {
   nome: string
   email: string
   senha: string
-  role?: 'ADMIN' | 'RECEPCAO' | 'PROFESSOR' | 'ALUNO' | 'CATRACA'
 }
 
 export type LoginResponse = {

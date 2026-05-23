@@ -38,7 +38,6 @@ export function LoginPage() {
           nome: normalizedName,
           email: normalizedUsername,
           senha: password,
-          role: 'ADMIN',
         })
       } else {
         await login({ username: normalizedUsername, password })
@@ -135,7 +134,7 @@ export function LoginPage() {
                 autoComplete="username"
                 id="username"
                 name="username"
-                placeholder="admin@extremegym.com"
+                placeholder="admin@extremegym.local"
                 required
                 type="text"
                 value={username}
@@ -149,7 +148,7 @@ export function LoginPage() {
                 autoComplete="current-password"
                 id="password"
                 name="password"
-                minLength={6}
+                minLength={mode === 'register' ? 12 : 1}
                 placeholder="Informe sua senha"
                 required
                 type="password"
