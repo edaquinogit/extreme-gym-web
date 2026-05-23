@@ -1,13 +1,16 @@
+import { lazy, Suspense } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { API_URL } from '../../config/api'
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { MetricCard } from '../../components/ui/MetricCard'
 import { useDashboardData } from './useDashboardData'
 import ChartCard from '../../shared/components/charts/ChartCard'
 import EmptyChartState from '../../shared/components/charts/EmptyChartState'
-import PaymentsStatusChart from '../../shared/components/charts/PaymentsStatusChart'
-import CheckinsLast7DaysChart from '../../shared/components/charts/CheckinsLast7DaysChart'
-import RevenueByMonthChart from '../../shared/components/charts/RevenueByMonthChart'
-import MatriculasStatusChart from '../../shared/components/charts/MatriculasStatusChart'
+
+const PaymentsStatusChart = lazy(() => import('../../shared/components/charts/PaymentsStatusChart'))
+const CheckinsLast7DaysChart = lazy(() => import('../../shared/components/charts/CheckinsLast7DaysChart'))
+const RevenueByMonthChart = lazy(() => import('../../shared/components/charts/RevenueByMonthChart'))
+const MatriculasStatusChart = lazy(() => import('../../shared/components/charts/MatriculasStatusChart'))
 
 export function DashboardPage() {
   const { user } = useAuth()
@@ -19,8 +22,40 @@ export function DashboardPage() {
 
   const data = useDashboardData()
 
+  const dashboardActions: Array<{ title: string; detail: string; tone?: 'normal' | 'error' }> = []
+
+  if (!data.loading && !data.error) {
+    if (data.pagamentosVencidos && data.pagamentosVencidos > 0) {
+      dashboardActions.push({
+        title: 'Existem pagamentos vencidos para acompanhar.',
+        detail: 'Priorize a recuperacao financeira e contacte os clientes com atraso.',
+      })
+    }
+
+    if (data.pagamentosPendentes && data.pagamentosPendentes > 0) {
+      dashboardActions.push({
+        title: 'Há pagamentos pendentes.',
+        detail: 'Verifique boletos e confirmações para reduzir inadimplência.',
+      })
+    }
+
+    if (data.checkinsHoje !== undefined && data.checkinsHoje === 0) {
+      dashboardActions.push({
+        title: 'Nenhum check-in registrado hoje.',
+        detail: 'Acompanhe a frequencia dos alunos para identificar fluxos de atendimento.',
+      })
+    }
+
+    if (data.proximosVencimentos && data.proximosVencimentos.length > 0) {
+      dashboardActions.push({
+        title: 'Há próximos vencimentos agendados.',
+        detail: 'Fique atento a pagamentos e renovações nos próximos 14 dias.',
+      })
+    }
+  }
+
   return (
-    <>
+    <div className="dashboard-page">
       <section className="dashboard-welcome-banner">
         <div className="dashboard-welcome-content">
           <p className="page-kicker">BEM-VINDO</p>
@@ -68,43 +103,98 @@ export function DashboardPage() {
         <MetricCard title="Receita mensal" value={data.receitaMensal ?? '-'} helper="Resumo financeiro do mes" loading={data.loading} error={data.error ?? null} />
       </section>
 
-      <section style={{ marginTop: 14 }}>
-        <h2 style={{ margin: '8px 0 12px', fontSize: '1rem', fontWeight: 800 }}>Visão gerencial</h2>
+      <section className="dashboard-actions">
+        <div className="dashboard-actions-header">
+          <div>
+            <span className="overview-label">Resumo operacional</span>
+            <h2>Atenção imediata</h2>
+            <p>Os principais pontos abaixo ajudam a priorizar as decisoes de gestao do dia.</p>
+          </div>
+        </div>
+
+        <div className="dashboard-action-list">
+          {data.loading ? (
+            <div className="dashboard-action-item">
+              <LoadingSpinner size={18} />
+              <div>
+                <strong>Carregando recomendacoes do painel</strong>
+                <p>Os dados estão sendo carregados diretamente da API.</p>
+              </div>
+            </div>
+          ) : data.error ? (
+            <div className="dashboard-action-item dashboard-action-item--error">
+              <strong>Erro ao carregar as recomendacoes</strong>
+              <p>{data.error}</p>
+            </div>
+          ) : dashboardActions.length > 0 ? (
+            dashboardActions.map((action) => (
+              <div key={action.title} className={`dashboard-action-item ${action.tone === 'error' ? 'dashboard-action-item--error' : ''}`}>
+                <div className="dashboard-action-icon" aria-hidden />
+                <div>
+                  <strong>{action.title}</strong>
+                  <p>{action.detail}</p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="dashboard-action-item dashboard-action-item--success">
+              <div className="dashboard-action-icon" aria-hidden />
+              <div>
+                <strong>Painel pronto para uso</strong>
+                <p>Os dados estão atualizados e o fluxo operacional está visivel.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="dashboard-section">
+        <h2>Visão gerencial</h2>
+        <p className="section-description">Indicadores que mostram a situação financeira e o movimento de acesso.</p>
         <div className="charts-grid">
           <ChartCard title="Status dos pagamentos" description="Distribuição dos pagamentos por situação financeira." loading={data.loading} error={data.error ?? null}>
             {data.pagamentosPorStatus && data.pagamentosPorStatus.length > 0 ? (
-              <PaymentsStatusChart data={data.pagamentosPorStatus} />
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+                <PaymentsStatusChart data={data.pagamentosPorStatus} />
+              </Suspense>
             ) : (
-              <EmptyChartState message="Nenhum pagamento registrado." />
+              <EmptyChartState message="Nenhum pagamento registrado ainda. Registre cobranças para visualizar a distribuição financeira." />
             )}
           </ChartCard>
 
           <ChartCard title="Check-ins últimos 7 dias" description="Movimento registrado na academia nos últimos 7 dias." loading={data.loading} error={data.error ?? null}>
             {data.checkinsPorDia && data.checkinsPorDia.length > 0 ? (
-              <CheckinsLast7DaysChart data={data.checkinsPorDia} />
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+                <CheckinsLast7DaysChart data={data.checkinsPorDia} />
+              </Suspense>
             ) : (
-              <EmptyChartState message="Sem registros recentes de check-in." />
+              <EmptyChartState message="Nenhum check-in encontrado nos últimos 7 dias. Os movimentos aparecerão aqui conforme os alunos acessarem a academia." />
             )}
           </ChartCard>
         </div>
       </section>
 
-      <section style={{ marginTop: 14 }}>
-        <h2 style={{ margin: '8px 0 12px', fontSize: '1rem', fontWeight: 800 }}>Financeiro e matrículas</h2>
+      <section className="dashboard-section">
+        <h2>Financeiro e matrículas</h2>
+        <p className="section-description">Dados financeiros e de matriculas para apoiar o controle operacional.</p>
         <div className="charts-grid">
           <ChartCard title="Receita (últimos 6 meses)" description="Receita confirmada a partir de pagamentos pagos." loading={data.loading} error={data.error ?? null}>
             {data.receitaPorMes && data.receitaPorMes.some((m) => m.value > 0) ? (
-              <RevenueByMonthChart data={data.receitaPorMes} />
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+                <RevenueByMonthChart data={data.receitaPorMes} />
+              </Suspense>
             ) : (
-              <EmptyChartState message="Ainda nao ha receita suficiente nos ultimos meses." />
+              <EmptyChartState message="Ainda não há receita confirmada nos últimos 6 meses. Pagamentos PAGO serão exibidos aqui." />
             )}
           </ChartCard>
 
           <ChartCard title="Matrículas por status" description="Situação atual das matrículas cadastradas." loading={data.loading} error={data.error ?? null}>
             {data.matriculasPorStatus && data.matriculasPorStatus.length > 0 ? (
-              <MatriculasStatusChart data={data.matriculasPorStatus} />
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+                <MatriculasStatusChart data={data.matriculasPorStatus} />
+              </Suspense>
             ) : (
-              <EmptyChartState message="Nenhuma matrícula encontrada." />
+              <EmptyChartState message="Nenhuma matrícula encontrada. Cadastre matriculas para acompanhar o desempenho." />
             )}
           </ChartCard>
         </div>
@@ -131,6 +221,6 @@ export function DashboardPage() {
           )}
         </div>
       </section>
-    </>
+    </div>
   )
 }
