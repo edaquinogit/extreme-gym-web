@@ -676,10 +676,10 @@ h1 {
 
 .sidebar-top {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 16px 12px;
+  padding: 18px 18px 14px;
   border-bottom: 1px solid var(--color-border-soft);
   flex: 0 0 auto;
 }
@@ -729,30 +729,36 @@ h1 {
 
 .nav-link {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   border: 0;
   border-radius: var(--radius-sm);
-  padding: 0 10px;
+  padding: 6px 12px;
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.92rem;
+  font-weight: 700;
   text-align: left;
   cursor: pointer;
-  transition: background 130ms ease, color 130ms ease;
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
 }
 
 .nav-link:hover {
   background: var(--color-bg-soft);
   color: var(--color-text-soft);
+  transform: translateX(2px);
 }
 
 .nav-link.is-active {
-  background: var(--color-primary-soft);
+  background: linear-gradient(90deg, rgba(26,122,60,0.04), rgba(26,122,60,0.02));
   color: var(--color-primary-strong);
+  box-shadow: inset 0 0 0 1px rgba(26,122,60,0.03);
+}
+
+.nav-link[aria-current="page"] {
+  outline: 2px solid rgba(26,122,60,0.08);
 }
 
 .nav-link.is-active .nav-icon {
@@ -774,6 +780,8 @@ h1 {
   font-size: 0.7rem;
   font-weight: 800;
 }
+
+.nav-label { white-space: nowrap; }
 
 .nav-label {
   transition: opacity 160ms ease, max-width 160ms ease;
@@ -904,19 +912,19 @@ h1 {
 .header-context strong {
   display: block;
   color: var(--color-text-soft);
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 1.02rem;
+  font-weight: 800;
 }
 
 .header-context span {
   display: block;
   color: var(--color-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
 }
 
 .header-user {
   color: var(--color-text-muted);
-  font-size: 0.84rem;
+  font-size: 0.92rem;
   font-weight: 600;
 }
 
@@ -1615,6 +1623,15 @@ h1 {
 @media (max-width: 1180px) { .metric-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 980px)  { .dashboard-overview { grid-template-columns: 1fr; } }
 @media (max-width: 620px)  { .metric-grid { grid-template-columns: 1fr 1fr; } }
+
+.charts-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+@media (max-width: 980px) { .charts-grid { grid-template-columns: 1fr; } }
 
 @media (max-width: 860px) {
   .admin-layout,

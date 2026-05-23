@@ -49,6 +49,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     .filter(Boolean)
     .join(' ')
 
+  const currentNavItem = navigationItems.find((i) => i.path === currentPath)
+
   return (
     <div className={`admin-layout ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       <button
@@ -58,7 +60,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         onClick={() => setIsMenuOpen(false)}
       />
 
-      <aside className={sidebarClassName}>
+      <aside className={sidebarClassName} aria-label="Barra lateral principal">
         <div className="sidebar-top">
           <div className="brand-block">
             <span className="brand-mark">EG</span>
@@ -90,24 +92,30 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         <nav className="sidebar-nav" aria-label="Navegacao principal">
-          {navigationItems.map((item) => (
-            <button
-              className={currentPath === item.path ? 'nav-link is-active' : 'nav-link'}
-              key={item.path}
-              title={item.label}
-              type="button"
-              onClick={() => handleNavigate(item.path)}
-            >
-              <span className="nav-icon" aria-hidden="true">
-                {item.compactLabel}
-              </span>
-              <span className="nav-label">{item.label}</span>
-            </button>
-          ))}
+          {navigationItems.map((item) => {
+            const isActive = currentPath === item.path
+            return (
+              <button
+                className={`nav-link ${isActive ? 'is-active' : ''}`}
+                key={item.path}
+                title={item.label}
+                type="button"
+                aria-current={isActive ? 'page' : undefined}
+                onClick={() => handleNavigate(item.path)}
+              >
+                <span className="nav-icon" aria-hidden="true">
+                  {item.compactLabel}
+                </span>
+                <span className="nav-label">{item.label}</span>
+              </button>
+            )
+          })}
         </nav>
 
-        <div className="sidebar-user-block">
-          <div className="sidebar-user-avatar">{userInitials}</div>
+        <div className="sidebar-user-block" role="region" aria-label="Informacoes do usuario">
+          <div className="sidebar-user-avatar" aria-hidden>
+            {userInitials}
+          </div>
           <div className="sidebar-user-info">
             <strong>{userLabel}</strong>
             <small>{user?.role ?? 'Admin'}</small>
@@ -131,16 +139,30 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </button>
 
             <div className="header-context">
-              <strong>Painel administrativo</strong>
-              <span>Operacao Extreme Gym</span>
+              <strong>{currentNavItem?.label ?? 'Painel administrativo'}</strong>
+              <span>{currentNavItem ? 'Area de ' + currentNavItem.label.toLowerCase() : 'Operacao Extreme Gym'}</span>
             </div>
           </div>
 
           <div className="header-user">
-            <span>{userLabel}</span>
-            <button className="ghost-button" type="button" onClick={handleLogout}>
-              Sair
-            </button>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div className="sidebar-user-avatar" aria-hidden style={{ width: 36, height: 36 }}>
+                {userInitials}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <span style={{ fontWeight: 700 }}>{userLabel}</span>
+                <small style={{ color: 'var(--color-text-muted)' }}>{user?.role ?? 'Admin'}</small>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="ghost-button" type="button" onClick={() => handleNavigate(appPaths.alunos)} title="Ir para Alunos">
+                Alunos
+              </button>
+              <button className="primary-button" type="button" onClick={handleLogout} aria-label="Sair">
+                Sair
+              </button>
+            </div>
           </div>
         </header>
 
