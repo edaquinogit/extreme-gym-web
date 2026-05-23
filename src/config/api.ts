@@ -5,3 +5,6 @@ export const API_URL = (
   import.meta.env.VITE_API_URL ??
   DEFAULT_API_URL
 ).replace(/\/$/, '')
+
+export const AUTH_REGISTRATION_ENABLED =
+  import.meta.env.VITE_AUTH_REGISTRATION_ENABLED === 'true'

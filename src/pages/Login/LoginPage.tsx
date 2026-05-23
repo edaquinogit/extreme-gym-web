@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { appPaths } from '../../app/routes/paths'
 import { navigateTo } from '../../app/routes/router'
 import { ApiStatus } from '../../components/ApiStatus'
+import { AUTH_REGISTRATION_ENABLED } from '../../config/api'
 import { useAuth } from '../../hooks/useAuth'
 import { HttpError } from '../../services/httpClient'
 
@@ -26,7 +27,7 @@ export function LoginPage() {
     }
 
     try {
-      if (mode === 'register') {
+      if (mode === 'register' && AUTH_REGISTRATION_ENABLED) {
         const normalizedName = name.trim()
 
         if (!normalizedName) {
@@ -95,24 +96,26 @@ export function LoginPage() {
               </p>
             </div>
 
-            <div className="auth-mode-switch" aria-label="Modo de autenticacao">
-              <button
-                className={mode === 'login' ? 'is-active' : ''}
-                type="button"
-                onClick={() => handleModeChange('login')}
-              >
-                Entrar
-              </button>
-              <button
-                className={mode === 'register' ? 'is-active' : ''}
-                type="button"
-                onClick={() => handleModeChange('register')}
-              >
-                Criar acesso
-              </button>
-            </div>
+            {AUTH_REGISTRATION_ENABLED && (
+              <div className="auth-mode-switch" aria-label="Modo de autenticacao">
+                <button
+                  className={mode === 'login' ? 'is-active' : ''}
+                  type="button"
+                  onClick={() => handleModeChange('login')}
+                >
+                  Entrar
+                </button>
+                <button
+                  className={mode === 'register' ? 'is-active' : ''}
+                  type="button"
+                  onClick={() => handleModeChange('register')}
+                >
+                  Criar acesso
+                </button>
+              </div>
+            )}
 
-            {mode === 'register' && (
+            {mode === 'register' && AUTH_REGISTRATION_ENABLED && (
               <div>
                 <label htmlFor="name">Nome</label>
                 <input
@@ -163,7 +166,7 @@ export function LoginPage() {
               {getSubmitLabel(mode, isLoading)}
             </button>
 
-            {mode === 'register' && (
+            {mode === 'register' && AUTH_REGISTRATION_ENABLED && (
               <p className="form-hint">
                 O cadastro publico deve ficar habilitado apenas em ambiente de
                 desenvolvimento ou configuracao inicial.

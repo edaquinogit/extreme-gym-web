@@ -28,6 +28,7 @@ Configure a URL base da API:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080
+VITE_AUTH_REGISTRATION_ENABLED=false
 ```
 
 > O projeto tambem aceita `VITE_API_URL` por compatibilidade com a configuracao anterior.
@@ -100,7 +101,7 @@ O login envia:
 
 A resposta esperada deve conter `token` e `type: "Bearer"`. O frontend tambem aceita `accessToken` ou `jwt` por compatibilidade.
 
-Tambem existe a opcao `Criar usuario`, que chama `POST /auth/register` e autentica automaticamente quando o backend retornar o token. Esse fluxo e indicado apenas para ambiente de desenvolvimento enquanto o cadastro publico estiver habilitado na API com `AUTH_REGISTRATION_ENABLED=true`. O backend cria usuarios de registro publico com perfil `RECEPCAO`.
+Tambem existe a opcao `Criar usuario`, que chama `POST /auth/register` e autentica automaticamente quando o backend retornar o token. Esse fluxo fica oculto por padrao e deve ser habilitado apenas em ambiente de desenvolvimento com `VITE_AUTH_REGISTRATION_ENABLED=true` no frontend e `AUTH_REGISTRATION_ENABLED=true` na API. O backend cria usuarios de registro publico com perfil `RECEPCAO`.
 
 Credenciais de desenvolvimento:
 
