@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DataTable } from '../../components/tables/DataTable'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { StateMessage } from '../../components/ui/StateMessage'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { StatusDropdown } from '../../components/ui/StatusDropdown'
 import { useApiError } from '../../hooks/useApiError'
 import { useResourceList } from '../../hooks/useResourceList'
@@ -10,13 +11,18 @@ import type { Aluno, StatusAluno } from '../../types/aluno'
 import { formatDate } from '../../utils/formatDate'
 
 export function AlunosPage() {
-  const { data: alunos, errorMessage, isLoading } = useResourceList({
+  const { data: alunos, errorMessage, isLoading, reload } = useResourceList({
     load: alunoService.listar,
   })
   const { getErrorMessage } = useApiError()
   const [statusOverrides, setStatusOverrides] = useState<Record<number, StatusAluno>>({})
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [selectedAluno, setSelectedAluno] = useState<Aluno | null>(null)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [inactivateLoadingId, setInactivateLoadingId] = useState<number | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
 
   async function alterarStatusAluno(aluno: Aluno, status: StatusAluno) {
     try {
