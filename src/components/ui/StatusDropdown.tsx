@@ -19,6 +19,7 @@ const STATUS_TRANSITIONS: Record<StatusAluno, StatusAluno[]> = {
   INADIMPLENTE: ['ATIVO', 'BLOQUEADO', 'CANCELADO'],
   BLOQUEADO: ['ATIVO', 'INADIMPLENTE', 'CANCELADO'],
   CANCELADO: [],
+  INATIVO: [],
 }
 
 export function StatusDropdown({
@@ -28,7 +29,7 @@ export function StatusDropdown({
 }: StatusDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const canOpen = status !== 'CANCELADO' && !isLoading
+  const canOpen = status !== 'CANCELADO' && status !== 'INATIVO' && !isLoading
 
   useEffect(() => {
     if (!isOpen) {
@@ -55,7 +56,7 @@ export function StatusDropdown({
     onChange(nextStatus)
   }
 
-  if (status === 'CANCELADO') {
+  if (status === 'CANCELADO' || status === 'INATIVO') {
     return (
       <span className={`status-badge ${getStatusClass(status)}`}>
         {formatStatus(status)}
