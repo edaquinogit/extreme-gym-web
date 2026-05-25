@@ -38,12 +38,17 @@ export function useResourceList<TData>({ load }: UseResourceListOptions<TData>) 
   }, [getErrorMessage, load])
 
   useEffect(() => {
-    void loadData()
+    isMountedRef.current = true
+
+    const timeoutId = window.setTimeout(() => {
+      void loadData()
+    }, 0)
 
     return () => {
+      window.clearTimeout(timeoutId)
       isMountedRef.current = false
     }
   }, [loadData])
 
-  return { data, errorMessage, isLoading, reload: loadData, reloadError }
+  return { data, setData, errorMessage, isLoading, reload: loadData, reloadError }
 }

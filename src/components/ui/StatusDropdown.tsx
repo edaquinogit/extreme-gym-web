@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { StatusAluno } from '../../types/aluno'
+import { StatusBadge } from './StatusBadge'
 
 type StatusDropdownProps = {
   status: StatusAluno
@@ -57,11 +58,7 @@ export function StatusDropdown({
   }
 
   if (status === 'CANCELADO' || status === 'INATIVO') {
-    return (
-      <span className={`status-badge ${getStatusClass(status)}`}>
-        {formatStatus(status)}
-      </span>
-    )
+    return <StatusBadge status={status} />
   }
 
   return (
