@@ -18,4 +18,5 @@ export const alunoService = {
     })
   },
   remover: (id: number) => httpClient.delete<void>(`${ALUNOS_PATH}/${id}`),
+  inativar: (id: number) => httpClient.delete<void>(`${ALUNOS_PATH}/${id}`),
 }
