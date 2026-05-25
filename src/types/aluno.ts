@@ -1,4 +1,4 @@
-export type StatusAluno = 'ATIVO' | 'INADIMPLENTE' | 'BLOQUEADO' | 'CANCELADO'
+export type StatusAluno = 'ATIVO' | 'INADIMPLENTE' | 'BLOQUEADO' | 'CANCELADO' | 'INATIVO'
 
 export type Aluno = {
   id: number
