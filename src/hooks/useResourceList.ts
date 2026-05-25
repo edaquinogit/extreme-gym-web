@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApiError } from './useApiError'
 
 type UseResourceListOptions<TData> = {
@@ -9,37 +9,41 @@ export function useResourceList<TData>({ load }: UseResourceListOptions<TData>) 
   const [data, setData] = useState<TData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [reloadError, setReloadError] = useState<string | null>(null)
   const { getErrorMessage } = useApiError()
+  const isMountedRef = useRef(true)
 
-  useEffect(() => {
-    let isMounted = true
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setErrorMessage(null)
+      setReloadError(null)
 
-    async function loadData() {
-      try {
-        setIsLoading(true)
-        setErrorMessage(null)
-        const response = await load()
+      const response = await load()
 
-        if (isMounted) {
-          setData(response)
-        }
-      } catch (error) {
-        if (isMounted) {
-          setErrorMessage(getErrorMessage(error))
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+      if (isMountedRef.current) {
+        setData(response)
       }
-    }
-
-    void loadData()
-
-    return () => {
-      isMounted = false
+    } catch (error) {
+      if (isMountedRef.current) {
+        const message = getErrorMessage(error)
+        setErrorMessage(message)
+        setReloadError(message)
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false)
+      }
     }
   }, [getErrorMessage, load])
 
-  return { data, errorMessage, isLoading }
+  useEffect(() => {
+    void loadData()
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [loadData])
+
+  return { data, errorMessage, isLoading, reload: loadData, reloadError }
 }
