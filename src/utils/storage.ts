@@ -1,42 +1,84 @@
 const AUTH_TOKEN_KEY = 'extreme_gym_auth_token'
 const AUTH_USER_KEY = 'extreme_gym_auth_user'
 
-export function getStoredToken() {
-  return localStorage.getItem(AUTH_TOKEN_KEY)
-}
-
-export function setStoredToken(token: string) {
-  localStorage.setItem(AUTH_TOKEN_KEY, token)
-}
-
-export function removeStoredToken() {
-  localStorage.removeItem(AUTH_TOKEN_KEY)
-}
-
-export function getStoredUser<TUser>() {
-  const rawUser = localStorage.getItem(AUTH_USER_KEY)
-
-  if (!rawUser) {
-    return null
-  }
-
+function safeLocalStorage(): Storage | null {
   try {
-    return JSON.parse(rawUser) as TUser
+    if (typeof window === 'undefined' || !window.localStorage) return null
+    return window.localStorage
   } catch {
-    localStorage.removeItem(AUTH_USER_KEY)
     return null
   }
 }
 
-export function setStoredUser(user: unknown) {
-  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user))
+export function getStoredToken(): string | null {
+  try {
+    const storage = safeLocalStorage()
+    return storage ? storage.getItem(AUTH_TOKEN_KEY) : null
+  } catch {
+    return null
+  }
 }
 
-export function removeStoredUser() {
-  localStorage.removeItem(AUTH_USER_KEY)
+export function setStoredToken(token: string): void {
+  try {
+    const storage = safeLocalStorage()
+    if (!storage) return
+    storage.setItem(AUTH_TOKEN_KEY, token)
+  } catch {
+    // noop on storage write errors
+  }
 }
 
-export function clearAuthStorage() {
+export function removeStoredToken(): void {
+  try {
+    const storage = safeLocalStorage()
+    if (!storage) return
+    storage.removeItem(AUTH_TOKEN_KEY)
+  } catch {
+    // noop
+  }
+}
+
+export function getStoredUser<TUser>(): TUser | null {
+  try {
+    const storage = safeLocalStorage()
+    if (!storage) return null
+
+    const rawUser = storage.getItem(AUTH_USER_KEY)
+    if (!rawUser) return null
+
+    try {
+      return JSON.parse(rawUser) as TUser
+    } catch {
+      storage.removeItem(AUTH_USER_KEY)
+      return null
+    }
+  } catch {
+    return null
+  }
+}
+
+export function setStoredUser(user: unknown): void {
+  try {
+    const storage = safeLocalStorage()
+    if (!storage) return
+    storage.setItem(AUTH_USER_KEY, JSON.stringify(user))
+  } catch {
+    // noop
+  }
+}
+
+export function removeStoredUser(): void {
+  try {
+    const storage = safeLocalStorage()
+    if (!storage) return
+    storage.removeItem(AUTH_USER_KEY)
+  } catch {
+    // noop
+  }
+}
+
+export function clearAuthStorage(): void {
   removeStoredToken()
   removeStoredUser()
 }
