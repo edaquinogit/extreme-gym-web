@@ -1,8 +1,6 @@
 export type StatusMatricula =
   | 'ATIVA'
-  | 'PENDENTE'
   | 'CANCELADA'
-  | 'EXPIRADA'
   | 'VENCIDA'
 
 export type Matricula = {

@@ -1,7 +1,16 @@
 import { httpClient } from './httpClient'
-import type { AcessoResponse } from '../types/acesso'
+import {
+  acessoApiToViewModel,
+  acessoViewModelToAPI,
+  type AcessoAPI,
+} from '../mappers/acessoMapper'
 
 export const acessoService = {
-  validar: (alunoId: number) =>
-    httpClient.post<AcessoResponse>('/acessos/validar', { alunoId }),
+  validar: async (alunoId: number) => {
+    const acesso = await httpClient.post<AcessoAPI>(
+      '/acessos/validar',
+      acessoViewModelToAPI(alunoId),
+    )
+    return acessoApiToViewModel(acesso)
+  },
 }

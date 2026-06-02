@@ -59,7 +59,7 @@ export function useDashboardData() {
         const alunosAtivos = alunos.filter((a) => a.status === 'ATIVO').length
         const matriculasAtivas = matriculas.length
         const pagamentosPendentes = pagamentos.filter((p) => p.status === 'PENDENTE').length
-        const pagamentosVencidos = pagamentos.filter((p) => p.status === 'ATRASADO').length
+        const pagamentosVencidos = 0
         const checkinsHoje = checkins.filter((c) => isToday(c.dataHora)).length
 
         // pagamentos por status

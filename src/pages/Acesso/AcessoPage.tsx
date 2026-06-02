@@ -42,7 +42,7 @@ export function AcessoPage() {
       setCheckinMessage(
         response.permitido
           ? `Check-in registrado para ${response.alunoNome}.`
-          : response.motivo,
+          : response.motivo ?? 'Check-in registrado com acesso bloqueado.',
       )
     } catch (error) {
       setCheckinMessage(getErrorMessage(error))

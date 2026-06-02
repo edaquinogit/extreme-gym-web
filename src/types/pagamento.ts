@@ -1,4 +1,4 @@
-export type StatusPagamento = 'PAGO' | 'PENDENTE' | 'ATRASADO' | 'CANCELADO'
+export type StatusPagamento = 'PAGO' | 'PENDENTE' | 'CANCELADO'
 
 export type FormaPagamento =
   | 'PIX'

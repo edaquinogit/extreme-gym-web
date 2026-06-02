@@ -1,6 +1,6 @@
 import { httpClient } from './httpClient'
+import { authApiToViewModel } from '../mappers/authMapper'
 import type {
-  AuthUser,
   LoginCredentials,
   LoginResponse,
   RegisterCredentials,
@@ -21,16 +21,7 @@ export const authService = {
         skipAuth: true,
       },
     )
-    const token = response.token ?? response.accessToken ?? response.jwt
-
-    if (!token) {
-      throw new Error('Resposta de login sem token JWT.')
-    }
-
-    return {
-      token,
-      user: normalizeUser(response),
-    }
+    return authApiToViewModel(response)
   },
 
   async register(credentials: RegisterCredentials) {
@@ -45,27 +36,6 @@ export const authService = {
         skipAuth: true,
       },
     )
-    const token = response.token ?? response.accessToken ?? response.jwt
-
-    if (!token) {
-      throw new Error('Resposta de cadastro sem token JWT.')
-    }
-
-    return {
-      token,
-      user: normalizeUser(response),
-    }
+    return authApiToViewModel(response)
   },
-}
-
-function normalizeUser(response: LoginResponse): AuthUser {
-  return response.user ?? response.usuario ?? {
-    id: response.usuarioId,
-    usuarioId: response.usuarioId,
-    nome: response.nome,
-    username: response.username,
-    email: response.email,
-    role: response.role,
-    roles: response.role ? [response.role] : undefined,
-  }
 }
