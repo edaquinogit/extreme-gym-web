@@ -1,18 +1,14 @@
 import { httpClient } from './httpClient'
-import type { Checkin } from '../types/checkin'
+import { mapCheckinFromApi } from '../mappers/checkinMapper'
+import type { Checkin, CheckinApiDTO } from '../types/checkin'
 
-export type CheckinResponse = {
-  id: number
-  alunoId: number
-  alunoNome: string
-  matriculaId: number | null
-  permitido: boolean
-  motivo: string
-  dataHora: string
-}
+export type CheckinResponse = CheckinApiDTO
 
 export const checkinService = {
-  listar: () => httpClient.get<Checkin[]>('/checkins'),
+  listar: async (): Promise<Checkin[]> => {
+    const checkins = await httpClient.get<CheckinApiDTO[]>('/checkins')
+    return checkins.map(mapCheckinFromApi)
+  },
   registrar: (alunoId: number) =>
     httpClient.post<CheckinResponse>('/checkins', { alunoId }),
 }
