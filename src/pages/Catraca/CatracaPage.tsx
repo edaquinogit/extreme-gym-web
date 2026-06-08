@@ -7,12 +7,16 @@ import {
 } from 'react'
 import { useApiError } from '../../hooks/useApiError'
 import { acessoService } from '../../services/acessoService'
+import { accessDeviceService } from '../../services/accessDeviceService'
+import { accessEventService } from '../../services/accessEventService'
 import { alunoService } from '../../services/alunoService'
 import { checkinService } from '../../services/checkinService'
 import { HttpError } from '../../services/httpClient'
 import { matriculaService } from '../../services/matriculaService'
 import { pagamentoService } from '../../services/pagamentoService'
 import type { AcessoResponse } from '../../types/acesso'
+import type { AccessDevice } from '../../types/accessDevice'
+import type { AccessEvent } from '../../types/accessEvent'
 import type { Aluno, StatusAluno } from '../../types/aluno'
 import type { Matricula } from '../../types/matricula'
 import type { Pagamento } from '../../types/pagamento'
@@ -56,6 +60,8 @@ export function CatracaPage() {
   const [alunoId, setAlunoId] = useState('')
   const [result, setResult] = useState<CatracaResult | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
+  const [dispositivo, setDispositivo] = useState<AccessDevice | null>(null)
+  const [eventosRecentes, setEventosRecentes] = useState<AccessEvent[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const resultRef = useRef<CatracaResult | null>(null)
   const { getErrorMessage } = useApiError()
@@ -76,6 +82,35 @@ export function CatracaPage() {
     const intervalId = window.setInterval(() => setNow(new Date()), 1000)
 
     return () => window.clearInterval(intervalId)
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadAccessRuntimeData() {
+      const [deviceResult, eventResult] = await Promise.allSettled([
+        accessDeviceService.listar(),
+        accessEventService.listar(),
+      ])
+
+      if (!isMounted) {
+        return
+      }
+
+      if (deviceResult.status === 'fulfilled') {
+        setDispositivo(selectRuntimeDevice(deviceResult.value))
+      }
+
+      if (eventResult.status === 'fulfilled') {
+        setEventosRecentes(eventResult.value)
+      }
+    }
+
+    void loadAccessRuntimeData()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   useEffect(() => {
@@ -316,10 +351,12 @@ export function CatracaPage() {
       </header>
 
       <main className="catraca-body">
+        <DeviceStatusPanel dispositivo={dispositivo} />
+
         <section className="catraca-input-card" aria-label="Identificacao">
           <div className="catraca-input-copy">
             <h1>Identificacao do Aluno</h1>
-            <p>Informe o ID ou use o leitor de Face ID</p>
+            <p>Informe o ID do aluno para validacao manual autorizada</p>
           </div>
 
           <input
@@ -358,13 +395,143 @@ export function CatracaPage() {
             }}
           />
         ) : (
-          <p className="catraca-placeholder">
-            Aguardando identificacao do proximo aluno
-          </p>
+          <CatracaEmptyState eventosRecentes={eventosRecentes} />
         )}
       </main>
     </div>
   )
+}
+
+function selectRuntimeDevice(devices: AccessDevice[]) {
+  return (
+    devices.find((device) => device.status === 'ATIVO') ??
+    devices.find((device) => device.status !== 'INATIVO') ??
+    devices[0] ??
+    null
+  )
+}
+
+function DeviceStatusPanel({ dispositivo }: { dispositivo: AccessDevice | null }) {
+  if (!dispositivo) {
+    return (
+      <section className="catraca-device-panel" aria-label="Status da catraca">
+        <div>
+          <span className="overview-label">Dispositivo</span>
+          <h2>Gateway externo ainda nao validado</h2>
+        </div>
+        <p>Nenhum dispositivo de acesso foi retornado pelo backend.</p>
+        <p className="catraca-device-warning">
+          Use a operacao manual autorizada ate cadastrar e validar o gateway.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="catraca-device-panel" aria-label="Status da catraca">
+      <div className="catraca-device-header">
+        <div>
+          <span className="overview-label">Dispositivo</span>
+          <h2>{dispositivo.nome}</h2>
+        </div>
+        <span className={`catraca-device-status is-${dispositivo.status.toLowerCase()}`}>
+          {formatDeviceStatus(dispositivo.status)}
+        </span>
+      </div>
+
+      <dl className="catraca-device-grid">
+        <div>
+          <dt>Modo</dt>
+          <dd>{formatOperationMode(dispositivo.modoOperacao)}</dd>
+        </div>
+        <div>
+          <dt>Ultima comunicacao</dt>
+          <dd>{formatLastCommunication(dispositivo.ultimaComunicacaoEm)}</dd>
+        </div>
+        <div>
+          <dt>Tipo</dt>
+          <dd>{formatDeviceType(dispositivo.tipo)}</dd>
+        </div>
+        <div>
+          <dt>Unidade</dt>
+          <dd>{dispositivo.unidade || 'Unidade nao informada'}</dd>
+        </div>
+      </dl>
+
+      {(dispositivo.status === 'OFFLINE' || dispositivo.status === 'INATIVO') && (
+        <p className="catraca-device-warning">
+          Dispositivo sem operacao ativa. Use a operacao manual autorizada.
+        </p>
+      )}
+    </section>
+  )
+}
+
+function CatracaEmptyState({ eventosRecentes }: { eventosRecentes: AccessEvent[] }) {
+  return (
+    <section className="catraca-empty-state" aria-label="Estado inicial da catraca">
+      <p className="catraca-placeholder">Aguardando identificacao do proximo aluno</p>
+      <p className="catraca-hint">
+        Use a busca manual quando a identificacao automatica nao estiver disponivel.
+      </p>
+      {eventosRecentes.length > 0 ? (
+        <div className="catraca-recent-events" aria-label="Eventos recentes">
+          {eventosRecentes.slice(0, 4).map((event) => (
+            <div className="catraca-recent-event" key={event.id}>
+              <strong>{event.resultado === 'LIBERADO' ? 'Liberado' : 'Bloqueado'}</strong>
+              <span>{event.alunoNome || (event.alunoId ? `Aluno #${event.alunoId}` : 'Aluno nao informado')}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="catraca-hint">Nenhum evento de acesso retornado pelo backend.</p>
+      )}
+    </section>
+  )
+}
+
+function formatDeviceStatus(status: AccessDevice['status']) {
+  const labels: Record<AccessDevice['status'], string> = {
+    ATIVO: 'Dispositivo ativo',
+    INATIVO: 'Dispositivo inativo',
+    OFFLINE: 'Catraca offline',
+    MANUTENCAO: 'Em manutencao',
+  }
+
+  return labels[status]
+}
+
+function formatOperationMode(mode: AccessDevice['modoOperacao']) {
+  const labels: Record<AccessDevice['modoOperacao'], string> = {
+    ONLINE: 'Online',
+    OFFLINE: 'Offline',
+    HIBRIDO: 'Hibrido',
+  }
+
+  return labels[mode]
+}
+
+function formatDeviceType(type: AccessDevice['tipo']) {
+  const labels: Record<AccessDevice['tipo'], string> = {
+    CATRACA_FACIAL: 'Catraca facial',
+    CATRACA_QR: 'Catraca QR',
+    GATEWAY: 'Gateway',
+    OUTRO: 'Outro',
+    RECEPCAO: 'Recepcao',
+  }
+
+  return labels[type]
+}
+
+function formatLastCommunication(value: string | null) {
+  if (!value) {
+    return 'Sem comunicacao registrada'
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value))
 }
 
 type ResultPanelProps = {

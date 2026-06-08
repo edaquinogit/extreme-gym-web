@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react'
+import { CredenciaisAcessoAluno } from '../../components/access/CredenciaisAcessoAluno'
 import { DataTable } from '../../components/tables/DataTable'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { FormField } from '../../components/ui/FormField'
@@ -46,6 +47,7 @@ export function AlunosPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [alunoToInactivate, setAlunoToInactivate] = useState<Aluno | null>(null)
   const [inactivateLoadingId, setInactivateLoadingId] = useState<number | null>(null)
+  const [credentialsAluno, setCredentialsAluno] = useState<Aluno | null>(null)
 
   const trimmedSearch = searchTerm.trim().toLowerCase()
   const filteredAlunos = trimmedSearch
@@ -278,6 +280,13 @@ export function AlunosPage() {
                         <button
                           type="button"
                           className="ghost-button compact"
+                          onClick={() => setCredentialsAluno(aluno)}
+                        >
+                          Credenciais
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-button compact"
                           onClick={() => openAlunoForm(aluno)}
                           disabled={isInactive}
                         >
@@ -365,6 +374,14 @@ export function AlunosPage() {
         onCancel={cancelAlunoInactivation}
         onConfirm={() => void inativarAluno()}
       />
+
+      <Modal
+        isOpen={Boolean(credentialsAluno)}
+        onClose={() => setCredentialsAluno(null)}
+        title={`Credenciais de ${credentialsAluno?.nome ?? 'aluno'}`}
+      >
+        {credentialsAluno && <CredenciaisAcessoAluno alunoId={credentialsAluno.id} />}
+      </Modal>
     </>
   )
 }
