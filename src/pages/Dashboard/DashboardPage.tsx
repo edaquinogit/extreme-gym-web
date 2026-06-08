@@ -1,9 +1,12 @@
 import { lazy, Suspense } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { API_URL } from '../../config/api'
+import { appPaths } from '../../app/routes/paths'
+import { navigateTo } from '../../app/routes/router'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { MetricCard } from '../../components/ui/MetricCard'
-import { useDashboardData } from './useDashboardData'
+import { StatusBadge } from '../../components/ui/StatusBadge'
+import { useDashboardData, type DashboardPaymentItem } from './useDashboardData'
 import ChartCard from '../../shared/components/charts/ChartCard'
 import EmptyChartState from '../../shared/components/charts/EmptyChartState'
 
@@ -11,6 +14,14 @@ const PaymentsStatusChart = lazy(() => import('../../shared/components/charts/Pa
 const CheckinsLast7DaysChart = lazy(() => import('../../shared/components/charts/CheckinsLast7DaysChart'))
 const RevenueByMonthChart = lazy(() => import('../../shared/components/charts/RevenueByMonthChart'))
 const MatriculasStatusChart = lazy(() => import('../../shared/components/charts/MatriculasStatusChart'))
+
+type DashboardAction = {
+  title: string
+  detail: string
+  tone?: 'normal' | 'error' | 'success'
+  actionLabel: string
+  path: string
+}
 
 export function DashboardPage() {
   const { user } = useAuth()
@@ -22,13 +33,16 @@ export function DashboardPage() {
 
   const data = useDashboardData()
 
-  const dashboardActions: Array<{ title: string; detail: string; tone?: 'normal' | 'error' }> = []
+  const dashboardActions: DashboardAction[] = []
 
   if (!data.loading && !data.error) {
     if (data.pagamentosVencidos && data.pagamentosVencidos > 0) {
       dashboardActions.push({
         title: 'Existem pagamentos vencidos para acompanhar.',
         detail: 'Priorize a recuperacao financeira e contacte os clientes com atraso.',
+        tone: 'error',
+        actionLabel: 'Ver vencidos',
+        path: withQuery(appPaths.pagamentos, { status: 'ATRASADO' }),
       })
     }
 
@@ -36,6 +50,8 @@ export function DashboardPage() {
       dashboardActions.push({
         title: 'Há pagamentos pendentes.',
         detail: 'Verifique boletos e confirmações para reduzir inadimplência.',
+        actionLabel: 'Ver pendentes',
+        path: withQuery(appPaths.pagamentos, { status: 'PENDENTE' }),
       })
     }
 
@@ -43,6 +59,8 @@ export function DashboardPage() {
       dashboardActions.push({
         title: 'Nenhum check-in registrado hoje.',
         detail: 'Acompanhe a frequencia dos alunos para identificar fluxos de atendimento.',
+        actionLabel: 'Abrir check-ins',
+        path: appPaths.checkins,
       })
     }
 
@@ -50,8 +68,14 @@ export function DashboardPage() {
       dashboardActions.push({
         title: 'Há próximos vencimentos agendados.',
         detail: 'Fique atento a pagamentos e renovações nos próximos 14 dias.',
+        actionLabel: 'Ver agenda',
+        path: withQuery(appPaths.pagamentos, { status: 'PENDENTE' }),
       })
     }
+  }
+
+  function goTo(path: string) {
+    navigateTo(path)
   }
 
   return (
@@ -90,17 +114,65 @@ export function DashboardPage() {
       </section>
 
       <section className="metric-grid">
-        <MetricCard title="Alunos ativos" value={data.alunosAtivos ?? '-'} helper="Base de alunos em acompanhamento" loading={data.loading} error={data.error ?? null} />
+        <MetricCard
+          title="Alunos ativos"
+          value={data.alunosAtivos ?? '-'}
+          helper="Base de alunos em acompanhamento"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver alunos"
+          onAction={() => goTo(withQuery(appPaths.alunos, { status: 'ATIVO' }))}
+        />
 
-        <MetricCard title="Matriculas ativas" value={data.matriculasAtivas ?? '-'} helper="Contratos vigentes no periodo" loading={data.loading} error={data.error ?? null} />
+        <MetricCard
+          title="Matriculas ativas"
+          value={data.matriculasAtivas ?? '-'}
+          helper="Contratos vigentes no periodo"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver matriculas"
+          onAction={() => goTo(withQuery(appPaths.matriculas, { status: 'ATIVA' }))}
+        />
 
-        <MetricCard title="Pagamentos pendentes" value={data.pagamentosPendentes ?? '-'} helper="Itens financeiros a acompanhar" loading={data.loading} error={data.error ?? null} />
+        <MetricCard
+          title="Pagamentos pendentes"
+          value={data.pagamentosPendentes ?? '-'}
+          helper="Itens financeiros a acompanhar"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Cobrar"
+          onAction={() => goTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
+        />
 
-        <MetricCard title="Pagamentos vencidos" value={data.pagamentosVencidos ?? '-'} helper="Itens com vencimento atrasado" loading={data.loading} error={data.error ?? null} />
+        <MetricCard
+          title="Pagamentos vencidos"
+          value={data.pagamentosVencidos ?? '-'}
+          helper="Itens com vencimento atrasado"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Regularizar"
+          onAction={() => goTo(withQuery(appPaths.pagamentos, { status: 'ATRASADO' }))}
+        />
 
-        <MetricCard title="Check-ins hoje" value={data.checkinsHoje ?? '-'} helper="Movimento registrado no dia" loading={data.loading} error={data.error ?? null} />
+        <MetricCard
+          title="Check-ins hoje"
+          value={data.checkinsHoje ?? '-'}
+          helper="Movimento registrado no dia"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver acessos"
+          onAction={() => goTo(appPaths.checkins)}
+        />
 
-        <MetricCard title="Receita mensal" value={data.receitaMensal ?? '-'} helper="Resumo financeiro do mes" loading={data.loading} error={data.error ?? null} />
+        <MetricCard
+          title="Receita mensal"
+          value={data.receitaMensal ?? '-'}
+          helper="Resumo financeiro do mes"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver pagos"
+          onAction={() => goTo(withQuery(appPaths.pagamentos, { status: 'PAGO' }))}
+        />
       </section>
 
       <section className="dashboard-actions">
@@ -134,6 +206,9 @@ export function DashboardPage() {
                   <strong>{action.title}</strong>
                   <p>{action.detail}</p>
                 </div>
+                <button className="ghost-button btn-sm" type="button" onClick={() => goTo(action.path)}>
+                  {action.actionLabel}
+                </button>
               </div>
             ))
           ) : (
@@ -145,6 +220,34 @@ export function DashboardPage() {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="dashboard-section">
+        <h2>Fila operacional</h2>
+        <p className="section-description">Itens prontos para acao, com foco em cobrança e vencimentos proximos.</p>
+        <div className="operations-grid">
+          <PaymentQueueCard
+            title="Cobranças vencidas"
+            emptyMessage="Nenhum pagamento vencido na fila."
+            items={data.pagamentosVencidosLista ?? []}
+            loading={data.loading}
+            onViewAll={() => goTo(withQuery(appPaths.pagamentos, { status: 'ATRASADO' }))}
+          />
+          <PaymentQueueCard
+            title="Pagamentos pendentes"
+            emptyMessage="Nenhum pagamento pendente na fila."
+            items={data.pagamentosPendentesLista ?? []}
+            loading={data.loading}
+            onViewAll={() => goTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
+          />
+          <PaymentQueueCard
+            title="Vencimentos nos proximos 14 dias"
+            emptyMessage="Nenhum vencimento previsto para os proximos 14 dias."
+            items={data.proximosVencimentos ?? []}
+            loading={data.loading}
+            onViewAll={() => goTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
+          />
         </div>
       </section>
 
@@ -198,29 +301,104 @@ export function DashboardPage() {
             )}
           </ChartCard>
         </div>
-        <div className="content-panel" style={{ padding: 14 }}>
-          <strong style={{ display: 'block', marginBottom: 8 }}>Vencimentos proximos</strong>
+        <div className="content-panel upcoming-due-panel">
+          <strong>Vencimentos proximos</strong>
           {data.loading ? (
-            <small style={{ color: 'var(--color-text-muted)' }}>Carregando...</small>
+            <small>Carregando...</small>
           ) : data.proximosVencimentos && data.proximosVencimentos.length > 0 ? (
-            <div style={{ display: 'grid', gap: 8 }}>
+            <div className="upcoming-due-list">
               {data.proximosVencimentos.map((p) => (
-                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={p.id} className="upcoming-due-item">
                   <div>
-                    <div style={{ fontWeight: 700 }}>{p.alunoNome ?? '—'}</div>
-                    <small style={{ color: 'var(--color-text-muted)' }}>{p.dataVencimento}</small>
+                    <div>{p.alunoNome ?? '—'}</div>
+                    <small>{p.dataVencimento}</small>
                   </div>
-                  <div style={{ fontWeight: 700 }}>{p.valor ? p.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</div>
+                  <div>{p.valor ? p.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</div>
                 </div>
               ))}
             </div>
           ) : (
-            <div style={{ padding: 12 }}>
-              <small style={{ color: 'var(--color-text-muted)' }}>Nenhum vencimento proximo nos proximos 14 dias.</small>
+            <div className="upcoming-due-empty">
+              <small>Nenhum vencimento proximo nos proximos 14 dias.</small>
             </div>
           )}
         </div>
       </section>
     </div>
   )
+}
+
+function PaymentQueueCard({
+  emptyMessage,
+  items,
+  loading,
+  onViewAll,
+  title,
+}: {
+  emptyMessage: string
+  items: DashboardPaymentItem[]
+  loading: boolean
+  onViewAll: () => void
+  title: string
+}) {
+  return (
+    <article className="operation-card">
+      <header className="operation-card-header">
+        <strong>{title}</strong>
+        <button className="ghost-button btn-sm" type="button" onClick={onViewAll}>
+          Ver todos
+        </button>
+      </header>
+
+      {loading ? (
+        <div className="operation-card-loading">
+          <LoadingSpinner size={18} />
+          <span>Carregando fila...</span>
+        </div>
+      ) : items.length > 0 ? (
+        <div className="operation-list">
+          {items.map((item) => (
+            <button
+              key={`${title}-${item.id}`}
+              className="operation-item"
+              type="button"
+              onClick={onViewAll}
+            >
+              <span>
+                <strong>{item.alunoNome ?? `Pagamento #${item.id}`}</strong>
+                <small>
+                  {item.dataVencimento ? `Vence em ${formatDateOnly(item.dataVencimento)}` : 'Sem vencimento informado'}
+                </small>
+              </span>
+              <span className="operation-item-side">
+                <StatusBadge status={item.status} />
+                <strong>{formatMoney(item.valor)}</strong>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="operation-empty">{emptyMessage}</p>
+      )}
+    </article>
+  )
+}
+
+function withQuery(path: string, params: Record<string, string>) {
+  const search = new URLSearchParams(params)
+  return `${path}?${search.toString()}`
+}
+
+function formatDateOnly(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('pt-BR').format(date)
+}
+
+function formatMoney(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }

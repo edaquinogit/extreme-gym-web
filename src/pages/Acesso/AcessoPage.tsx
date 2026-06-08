@@ -72,7 +72,7 @@ export function AcessoPage() {
 
         <button
           type="button"
-          className="btn btn--primary btn--full btn--lg"
+          className="primary-button is-full is-large"
           disabled={isLoading || !alunoId}
           onClick={() => void validarAcesso()}
         >
@@ -116,7 +116,7 @@ export function AcessoPage() {
                 {resultado.acessoLiberado && (
                   <button
                     type="button"
-                    className="btn btn--primary btn--full"
+                    className="primary-button is-full"
                     disabled={isRegisteringCheckin}
                     onClick={() => void registrarCheckin()}
                   >

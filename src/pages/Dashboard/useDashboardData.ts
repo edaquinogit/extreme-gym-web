@@ -14,11 +14,22 @@ type DashboardState = {
   pagamentosVencidos?: number
   checkinsHoje?: number
   receitaMensal?: string
-  proximosVencimentos?: Array<{ id: number; alunoNome?: string; dataVencimento?: string; valor: number }>
+  proximosVencimentos?: DashboardPaymentItem[]
+  pagamentosPendentesLista?: DashboardPaymentItem[]
+  pagamentosVencidosLista?: DashboardPaymentItem[]
   pagamentosPorStatus?: Array<{ name: string; value: number }>
   checkinsPorDia?: Array<{ day: string; count: number }>
   receitaPorMes?: Array<{ month: string; value: number }>
   matriculasPorStatus?: Array<{ name: string; value: number }>
+}
+
+export type DashboardPaymentItem = {
+  id: number
+  alunoNome?: string
+  dataVencimento?: string
+  matriculaId?: number
+  status: string
+  valor: number
 }
 
 function isToday(dateStr?: string) {
@@ -57,7 +68,7 @@ export function useDashboardData() {
         const checkins = Array.isArray(checkinsRes) ? checkinsRes : []
 
         const alunosAtivos = alunos.filter((a) => a.status === 'ATIVO').length
-        const matriculasAtivas = matriculas.length
+        const matriculasAtivas = matriculas.filter((m) => m.status === 'ATIVA').length
         const pagamentosPendentes = pagamentos.filter((p) => p.status === 'PENDENTE').length
         const pagamentosVencidos = pagamentos.filter((p) => p.status === 'ATRASADO').length
         const checkinsHoje = checkins.filter((c) => isToday(c.dataHora)).length
@@ -124,16 +135,30 @@ export function useDashboardData() {
           }, {}),
         ).map(([name, value]) => ({ name, value }))
 
+        const pagamentosPendentesLista = pagamentos
+          .filter((p) => p.status === 'PENDENTE')
+          .sort((a, b) => compareDates(a.dataVencimento, b.dataVencimento))
+          .slice(0, 5)
+          .map(toPaymentItem)
+
+        const pagamentosVencidosLista = pagamentos
+          .filter((p) => p.status === 'ATRASADO')
+          .sort((a, b) => compareDates(a.dataVencimento, b.dataVencimento))
+          .slice(0, 5)
+          .map(toPaymentItem)
+
         const proximosVencimentos = pagamentos
+          .filter((p) => p.status !== 'PAGO' && p.status !== 'CANCELADO')
           .filter((p) => p.dataVencimento)
-          .map((p) => ({ id: p.id, alunoNome: p.alunoNome, dataVencimento: p.dataVencimento, valor: p.valor }))
           .filter((p) => {
             const d = new Date(p.dataVencimento!)
             const now = new Date()
             const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
             return diff >= 0 && diff <= 14
           })
+          .sort((a, b) => compareDates(a.dataVencimento, b.dataVencimento))
           .slice(0, 6)
+          .map(toPaymentItem)
 
         setState({
           loading: false,
@@ -145,6 +170,8 @@ export function useDashboardData() {
           receitaMensal: formatCurrency(
             receitaPorMes.reduce((s, m) => s + (m.value ?? 0), 0),
           ),
+          pagamentosPendentesLista,
+          pagamentosVencidosLista,
           proximosVencimentos,
           pagamentosPorStatus,
           receitaPorMes,
@@ -168,3 +195,29 @@ export function useDashboardData() {
 }
 
 export default useDashboardData
+
+function toPaymentItem(payment: {
+  id: number
+  alunoNome?: string
+  dataVencimento?: string
+  matriculaId?: number
+  status: string
+  valor: number
+}): DashboardPaymentItem {
+  return {
+    id: payment.id,
+    alunoNome: payment.alunoNome,
+    dataVencimento: payment.dataVencimento,
+    matriculaId: payment.matriculaId,
+    status: payment.status,
+    valor: payment.valor,
+  }
+}
+
+function compareDates(first?: string, second?: string) {
+  return getDateTime(first) - getDateTime(second)
+}
+
+function getDateTime(value?: string) {
+  return value ? new Date(value).getTime() : Number.MAX_SAFE_INTEGER
+}

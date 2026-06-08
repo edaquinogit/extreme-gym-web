@@ -145,17 +145,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           <div className="header-user">
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <div className="sidebar-user-avatar" aria-hidden style={{ width: 36, height: 36 }}>
+            <div className="header-user-profile">
+              <div className="sidebar-user-avatar header-user-avatar" aria-hidden>
                 {userInitials}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ fontWeight: 700 }}>{userLabel}</span>
-                <small style={{ color: 'var(--color-text-muted)' }}>{user?.role ?? 'Admin'}</small>
+              <div className="header-user-copy">
+                <span>{userLabel}</span>
+                <small>{user?.role ?? 'Admin'}</small>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div className="header-user-actions">
               <button className="ghost-button" type="button" onClick={() => handleNavigate(appPaths.alunos)} title="Ir para Alunos">
                 Alunos
               </button>

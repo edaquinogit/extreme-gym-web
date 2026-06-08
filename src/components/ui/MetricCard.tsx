@@ -6,9 +6,19 @@ type MetricCardProps = {
   helper?: string
   loading?: boolean
   error?: string | null
+  actionLabel?: string
+  onAction?: () => void
 }
 
-export function MetricCard({ title, value, helper, loading, error }: MetricCardProps) {
+export function MetricCard({
+  actionLabel,
+  error,
+  helper,
+  loading,
+  onAction,
+  title,
+  value,
+}: MetricCardProps) {
   return (
     <article className="metric-card" role="group" aria-label={title}>
       <div className="metric-card-header">
@@ -17,25 +27,31 @@ export function MetricCard({ title, value, helper, loading, error }: MetricCardP
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className="spinner" style={{ width: 20, height: 20, borderRadius: 999, border: '3px solid', borderTopColor: 'transparent', animation: 'spin 900ms linear infinite' }} />
-          <small style={{ color: 'var(--color-text-muted)' }}>Carregando...</small>
+        <div className="metric-card-loading">
+          <div className="spinner metric-card-spinner" />
+          <small>Carregando...</small>
         </div>
       ) : error ? (
         <div>
           <strong>-</strong>
-          <small style={{ color: 'var(--color-danger)', display: 'block', marginTop: 6 }}>{error}</small>
+          <small className="metric-card-error">{error}</small>
         </div>
       ) : value === undefined || value === null ? (
         <div>
           <strong>-</strong>
-          <small style={{ color: 'var(--color-text-muted)' }}>{helper}</small>
+          <small>{helper}</small>
         </div>
       ) : (
         <>
           <strong>{value}</strong>
           {helper && <small>{helper}</small>}
         </>
+      )}
+
+      {onAction && !loading && !error && (
+        <button className="metric-card-action" type="button" onClick={onAction}>
+          {actionLabel ?? 'Ver detalhes'}
+        </button>
       )}
     </article>
   )

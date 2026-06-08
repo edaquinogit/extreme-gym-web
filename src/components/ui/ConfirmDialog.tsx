@@ -23,10 +23,10 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title={title}>
-      <div style={{ display: 'grid', gap: 18 }}>
-        <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.6 }}>{description}</p>
+      <div className="confirm-dialog">
+        <p>{description}</p>
 
-        <div className="form-actions" style={{ justifyContent: 'space-between' }}>
+        <div className="form-actions confirm-dialog-actions">
           <button type="button" className="ghost-button" onClick={onCancel} disabled={isLoading}>
             {cancelLabel}
           </button>

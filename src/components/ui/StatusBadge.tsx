@@ -1,19 +1,7 @@
 type StatusBadgeProps = {
-  status: string
+  status?: string | null
   className?: string
   children?: string
-}
-
-function normalizeStatus(status: string) {
-  return String(status).trim().toUpperCase()
-}
-
-function formatStatus(status: string) {
-  const normalized = normalizeStatus(status).replace(/_/g, ' ')
-
-  return normalized
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 export function StatusBadge({
@@ -22,10 +10,22 @@ export function StatusBadge({
   children,
 }: StatusBadgeProps) {
   const normalizedStatus = normalizeStatus(status)
+  const statusClass = `is-${normalizedStatus.toLowerCase()}`
 
   return (
-    <span className={`status-badge ${className}`.trim()} data-status={normalizedStatus}>
+    <span
+      className={`status-badge ${statusClass} ${className}`.trim()}
+      data-status={normalizedStatus}
+    >
       {children ?? formatStatus(normalizedStatus)}
     </span>
   )
+}
+
+function normalizeStatus(status?: string | null) {
+  return String(status || 'INDEFINIDO').trim().toUpperCase()
+}
+
+function formatStatus(status: string) {
+  return status.replaceAll('_', ' ')
 }
