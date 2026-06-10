@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { appPaths } from '../../app/routes/paths'
 import { navigateTo } from '../../app/routes/router'
 import { ApiStatus } from '../../components/ApiStatus'
+import { BrandLogo } from '../../components/brand/BrandLogo'
 import { AUTH_REGISTRATION_ENABLED } from '../../config/api'
 import { useAuth } from '../../hooks/useAuth'
 import { HttpError } from '../../services/httpClient'
@@ -59,12 +60,11 @@ export function LoginPage() {
     <main className="login-page">
       <div className="login-left-panel">
         <div className="login-brand-mark">
-          <span className="brand-mark">EG</span>
-          <strong>ExtremeGym</strong>
+          <BrandLogo />
         </div>
 
         <div className="login-hero">
-          <h2>Gestao moderna para academias que crescem</h2>
+          <h2>Gestao premium para uma operacao mais forte</h2>
           <ul className="login-hero-bullets">
             <li>Controle de alunos, planos e matriculas</li>
             <li>Pagamentos e inadimplencia em um so lugar</li>
@@ -72,16 +72,16 @@ export function LoginPage() {
           </ul>
         </div>
 
-        <footer className="login-left-footer">Extreme Gym · Painel administrativo</footer>
+        <footer className="login-left-footer">Academia Extreme · Painel administrativo</footer>
       </div>
 
       <div className="login-right-panel">
         <section className="login-panel">
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="login-brand">
-              <span className="brand-mark">EG</span>
+              <BrandLogo />
               <div>
-                <strong>Extreme Gym</strong>
+                <strong>Academia Extreme</strong>
                 <small>Painel administrativo</small>
               </div>
             </div>

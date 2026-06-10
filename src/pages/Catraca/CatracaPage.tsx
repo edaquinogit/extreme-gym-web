@@ -5,6 +5,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
+import { BrandLogo } from '../../components/brand/BrandLogo'
 import { useApiError } from '../../hooks/useApiError'
 import { acessoService } from '../../services/acessoService'
 import { alunoService } from '../../services/alunoService'
@@ -299,7 +300,7 @@ export function CatracaPage() {
     <div className="catraca-page">
       <header className="catraca-topbar">
         <div className="catraca-brand">
-          <span className="brand-mark">EG</span>
+          <BrandLogo compact />
           <span>Controle de Acesso</span>
         </div>
 
@@ -667,7 +668,7 @@ function getWhatsAppUrl(
     ? phoneDigits
     : `55${phoneDigits}`
   const message = [
-    `Ola, ${aluno.nome}. Aqui e da ExtremeGym.`,
+    `Ola, ${aluno.nome}. Aqui e da Academia Extreme.`,
     acesso.acessoLiberado
       ? 'Seu acesso foi liberado na catraca.'
       : `Seu acesso precisa de atendimento: ${acesso.motivo}.`,

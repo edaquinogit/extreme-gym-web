@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useCurrentSearch } from '../../app/routes/router'
 import { DataTable } from '../../components/tables/DataTable'
 import { TablePagination } from '../../components/tables/TablePagination'
 import { PageHeader } from '../../components/ui/PageHeader'
@@ -23,6 +24,7 @@ export function MatriculasPage() {
   const { data: matriculas, errorMessage, isLoading } = useResourceList({
     load: matriculaService.listar,
   })
+  const currentSearch = useCurrentSearch()
   const [query, setQuery] = useState(() => getInitialSearchParam('q'))
   const [statusFilter, setStatusFilter] = useState<StatusMatricula | 'TODOS'>(() =>
     getInitialStatusFilter(),
@@ -60,13 +62,23 @@ export function MatriculasPage() {
     safePage * PAGE_SIZE,
   )
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setQuery(getSearchParam(currentSearch, 'q'))
+      setStatusFilter(getStatusFilterFromSearch(currentSearch))
+      setPage(1)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [currentSearch])
+
   return (
     <>
       <PageHeader
         eyebrow="Matriculas"
         title="Matriculas ativas e historico"
-        description="Visao inicial para relacionar aluno, plano, vencimento e status da matricula."
-        action={<button className="primary-button compact" type="button">Nova matricula</button>}
+        description="Consulta de vinculos entre alunos, planos, vencimentos e status da matricula."
+        action={<span className="readonly-note">Somente leitura no contrato atual</span>}
       />
 
       <div className="toolbar">
@@ -150,11 +162,19 @@ function formatStatus(status: string) {
 }
 
 function getInitialSearchParam(key: string) {
-  return new URLSearchParams(window.location.search).get(key) ?? ''
+  return getSearchParam(window.location.search, key)
 }
 
 function getInitialStatusFilter(): StatusMatricula | 'TODOS' {
-  const status = new URLSearchParams(window.location.search).get('status')
+  return getStatusFilterFromSearch(window.location.search)
+}
+
+function getSearchParam(search: string, key: string) {
+  return new URLSearchParams(search).get(key) ?? ''
+}
+
+function getStatusFilterFromSearch(search: string): StatusMatricula | 'TODOS' {
+  const status = new URLSearchParams(search).get('status')
 
   return STATUS_FILTERS.includes(status as StatusMatricula | 'TODOS')
     ? (status as StatusMatricula | 'TODOS')

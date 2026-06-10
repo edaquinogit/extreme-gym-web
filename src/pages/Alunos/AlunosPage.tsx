@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { DataTable } from '../../components/tables/DataTable'
 import { TablePagination } from '../../components/tables/TablePagination'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -9,6 +9,7 @@ import { StateMessage } from '../../components/ui/StateMessage'
 import { StatusDropdown } from '../../components/ui/StatusDropdown'
 import { useApiError } from '../../hooks/useApiError'
 import { useResourceList } from '../../hooks/useResourceList'
+import { useCurrentSearch } from '../../app/routes/router'
 import { alunoService } from '../../services/alunoService'
 import type { Aluno, StatusAluno } from '../../types/aluno'
 import { formatDate } from '../../utils/formatDate'
@@ -48,6 +49,7 @@ export function AlunosPage() {
     load: alunoService.listar,
   })
   const { getErrorMessage } = useApiError()
+  const currentSearch = useCurrentSearch()
   const [statusOverrides, setStatusOverrides] = useState<Record<number, StatusAluno>>({})
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
@@ -93,6 +95,16 @@ export function AlunosPage() {
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE,
   )
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setQuery(getSearchParam(currentSearch, 'q'))
+      setStatusFilter(getStatusFilterFromSearch(currentSearch))
+      setPage(1)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [currentSearch])
 
   async function alterarStatusAluno(aluno: Aluno, status: StatusAluno) {
     try {
@@ -400,11 +412,19 @@ function formatStatus(status: string) {
 }
 
 function getInitialSearchParam(key: string) {
-  return new URLSearchParams(window.location.search).get(key) ?? ''
+  return getSearchParam(window.location.search, key)
 }
 
 function getInitialStatusFilter(): StatusAluno | 'TODOS' {
-  const status = new URLSearchParams(window.location.search).get('status')
+  return getStatusFilterFromSearch(window.location.search)
+}
+
+function getSearchParam(search: string, key: string) {
+  return new URLSearchParams(search).get(key) ?? ''
+}
+
+function getStatusFilterFromSearch(search: string): StatusAluno | 'TODOS' {
+  const status = new URLSearchParams(search).get('status')
 
   return STATUS_FILTERS.includes(status as StatusAluno | 'TODOS')
     ? (status as StatusAluno | 'TODOS')

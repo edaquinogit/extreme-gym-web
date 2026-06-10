@@ -10,12 +10,16 @@ function subscribe(callback: () => void) {
   }
 }
 
-function getSnapshot() {
-  return window.location.pathname
+function getLocationSnapshot() {
+  return `${window.location.pathname}${window.location.search}`
+}
+
+function getSearchSnapshot() {
+  return window.location.search
 }
 
 export function navigateTo(path: string) {
-  if (window.location.pathname === path) {
+  if (getLocationSnapshot() === path) {
     return
   }
 
@@ -24,7 +28,13 @@ export function navigateTo(path: string) {
 }
 
 export function useCurrentPath() {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  const location = useSyncExternalStore(subscribe, getLocationSnapshot, getLocationSnapshot)
+
+  return location.split('?')[0]
+}
+
+export function useCurrentSearch() {
+  return useSyncExternalStore(subscribe, getSearchSnapshot, getSearchSnapshot)
 }
 
 export function useNavigate() {

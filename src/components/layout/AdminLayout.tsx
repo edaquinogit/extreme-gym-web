@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { appPaths } from '../../app/routes/paths'
 import { navigateTo, useCurrentPath } from '../../app/routes/router'
+import { BrandLogo } from '../brand/BrandLogo'
 import { useAuth } from '../../hooks/useAuth'
 
 const navigationItems = [
@@ -63,9 +64,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <aside className={sidebarClassName} aria-label="Barra lateral principal">
         <div className="sidebar-top">
           <div className="brand-block">
-            <span className="brand-mark">EG</span>
+            <BrandLogo compact={isSidebarCollapsed} />
             <div className="brand-copy">
-              <strong>Extreme Gym</strong>
+              <strong>Academia Extreme</strong>
               <small>Painel administrativo</small>
             </div>
           </div>
@@ -84,9 +85,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         <div className="brand-block mobile-brand">
-          <span className="brand-mark">EG</span>
+          <BrandLogo />
           <div className="brand-copy">
-            <strong>Extreme Gym</strong>
+            <strong>Academia Extreme</strong>
             <small>Painel administrativo</small>
           </div>
         </div>

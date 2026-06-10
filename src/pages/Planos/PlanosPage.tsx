@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useCurrentSearch } from '../../app/routes/router'
 import { DataTable } from '../../components/tables/DataTable'
 import { TablePagination } from '../../components/tables/TablePagination'
 import { PageHeader } from '../../components/ui/PageHeader'
@@ -16,6 +17,7 @@ export function PlanosPage() {
   const { data: planos, errorMessage, isLoading } = useResourceList({
     load: planoService.listar,
   })
+  const currentSearch = useCurrentSearch()
   const [query, setQuery] = useState(() => getInitialSearchParam('q'))
   const [statusFilter, setStatusFilter] = useState<StatusPlano | 'TODOS'>(() =>
     getInitialStatusFilter(),
@@ -51,13 +53,23 @@ export function PlanosPage() {
     safePage * PAGE_SIZE,
   )
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setQuery(getSearchParam(currentSearch, 'q'))
+      setStatusFilter(getStatusFilterFromSearch(currentSearch))
+      setPage(1)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [currentSearch])
+
   return (
     <>
       <PageHeader
         eyebrow="Planos"
         title="Planos da academia"
-        description="Tabela inicial para acompanhar planos ativos e inativos vindos de /planos."
-        action={<button className="primary-button compact" type="button">Novo plano</button>}
+        description="Consulta dos planos ativos e inativos retornados pela API."
+        action={<span className="readonly-note">Somente leitura no contrato atual</span>}
       />
 
       <div className="toolbar">
@@ -132,11 +144,19 @@ function normalizeText(value: string) {
 }
 
 function getInitialSearchParam(key: string) {
-  return new URLSearchParams(window.location.search).get(key) ?? ''
+  return getSearchParam(window.location.search, key)
 }
 
 function getInitialStatusFilter(): StatusPlano | 'TODOS' {
-  const status = new URLSearchParams(window.location.search).get('status')
+  return getStatusFilterFromSearch(window.location.search)
+}
+
+function getSearchParam(search: string, key: string) {
+  return new URLSearchParams(search).get(key) ?? ''
+}
+
+function getStatusFilterFromSearch(search: string): StatusPlano | 'TODOS' {
+  const status = new URLSearchParams(search).get('status')
 
   return STATUS_FILTERS.includes(status as StatusPlano | 'TODOS')
     ? (status as StatusPlano | 'TODOS')

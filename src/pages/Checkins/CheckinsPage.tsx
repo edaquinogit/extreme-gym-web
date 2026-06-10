@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useCurrentSearch } from '../../app/routes/router'
 import { DataTable } from '../../components/tables/DataTable'
 import { TablePagination } from '../../components/tables/TablePagination'
 import { PageHeader } from '../../components/ui/PageHeader'
@@ -20,6 +21,7 @@ export function CheckinsPage() {
   const { data: checkins, errorMessage, isLoading } = useResourceList({
     load: checkinService.listar,
   })
+  const currentSearch = useCurrentSearch()
   const [query, setQuery] = useState(() => getInitialSearchParam('q'))
   const [statusFilter, setStatusFilter] = useState<StatusCheckin | 'TODOS'>(() =>
     getInitialStatusFilter(),
@@ -54,6 +56,16 @@ export function CheckinsPage() {
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE,
   )
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setQuery(getSearchParam(currentSearch, 'q'))
+      setStatusFilter(getStatusFilterFromSearch(currentSearch))
+      setPage(1)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [currentSearch])
 
   return (
     <>
@@ -135,11 +147,19 @@ function normalizeText(value: string) {
 }
 
 function getInitialSearchParam(key: string) {
-  return new URLSearchParams(window.location.search).get(key) ?? ''
+  return getSearchParam(window.location.search, key)
 }
 
 function getInitialStatusFilter(): StatusCheckin | 'TODOS' {
-  const status = new URLSearchParams(window.location.search).get('status')
+  return getStatusFilterFromSearch(window.location.search)
+}
+
+function getSearchParam(search: string, key: string) {
+  return new URLSearchParams(search).get(key) ?? ''
+}
+
+function getStatusFilterFromSearch(search: string): StatusCheckin | 'TODOS' {
+  const status = new URLSearchParams(search).get('status')
 
   return STATUS_FILTERS.includes(status as StatusCheckin | 'TODOS')
     ? (status as StatusCheckin | 'TODOS')
