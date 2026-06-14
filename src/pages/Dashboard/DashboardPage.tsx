@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { useAuth } from '../../hooks/useAuth'
-import { API_URL } from '../../config/api'
+import { DashboardRecepcao } from './DashboardRecepcao'
 import { appPaths } from '../../app/routes/paths'
 import { navigateTo } from '../../app/routes/router'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -15,298 +15,291 @@ const CheckinsLast7DaysChart = lazy(() => import('../../shared/components/charts
 const RevenueByMonthChart = lazy(() => import('../../shared/components/charts/RevenueByMonthChart'))
 const MatriculasStatusChart = lazy(() => import('../../shared/components/charts/MatriculasStatusChart'))
 
-type DashboardAction = {
-  title: string
-  detail: string
-  tone?: 'normal' | 'error' | 'success'
-  actionLabel: string
-  path: string
-}
-
 export function DashboardPage() {
   const { user } = useAuth()
 
-  const firstName = (() => {
-    const raw = user?.nome ?? user?.name ?? user?.username ?? user?.email ?? 'Admin'
-    return raw.split(/[\s@]/)[0]
-  })()
+  if (user?.role === 'RECEPCAO') {
+    return <DashboardRecepcao />
+  }
 
+  return <AdminDashboard />
+}
+
+function AdminDashboard() {
+  const { user } = useAuth()
   const data = useDashboardData()
 
-  const dashboardActions: DashboardAction[] = []
+  const firstName = resolveFirstName(user)
+  const alerts = buildAlerts(data)
 
-  if (!data.loading && !data.error) {
-    if (data.pagamentosPendentes && data.pagamentosPendentes > 0) {
-      dashboardActions.push({
-        title: 'Ha pagamentos pendentes.',
-        detail: 'Verifique confirmacoes para reduzir inadimplencia.',
-        actionLabel: 'Ver pendentes',
-        path: withQuery(appPaths.pagamentos, { status: 'PENDENTE' }),
-      })
-    }
+  const inadimplenciaVariant =
+    (data.taxaInadimplencia ?? 0) >= 20 ? 'danger'
+    : (data.taxaInadimplencia ?? 0) >= 10 ? 'warning'
+    : 'default'
 
-    if (data.checkinsHoje !== undefined && data.checkinsHoje === 0) {
-      dashboardActions.push({
-        title: 'Nenhum check-in registrado hoje.',
-        detail: 'Acompanhe a frequencia dos alunos para identificar fluxos de atendimento.',
-        actionLabel: 'Abrir check-ins',
-        path: appPaths.checkins,
-      })
-    }
-  }
-
-  function goTo(path: string) {
-    navigateTo(path)
-  }
+  const vencimentoVariant =
+    (data.matriculasAVencer7dias ?? 0) >= 5 ? 'warning' : 'default'
 
   return (
     <div className="dashboard-page">
-      <section className="dashboard-welcome-banner">
-        <div className="dashboard-welcome-content">
-          <p className="page-kicker">BEM-VINDO</p>
+
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="dashboard-hero">
+        <div className="dashboard-hero-text">
+          <p className="page-kicker">PAINEL ADMIN</p>
           <h1>Ola, {firstName}.</h1>
-          <p className="page-description">
-            Gerencie a operacao da academia com visibilidade centralizada
-            e fluxos integrados a API.
-          </p>
         </div>
-        <div className="dashboard-welcome-badges">
+        <div className="dashboard-hero-badges">
           <span className="welcome-badge is-role">{user?.role ?? 'ADMIN'}</span>
-          <span className="welcome-badge is-status">
-            {data.loading ? 'Conectando...' : data.error ? 'API indisponivel' : 'API conectada'}
-          </span>
-          <span className="welcome-badge is-url">{API_URL}</span>
-        </div>
-      </section>
-
-      <section className="dashboard-overview" aria-label="Resumo operacional">
-        <article className="overview-panel">
-          <span className="overview-label">Operacao</span>
-          <strong>Ambiente administrativo ativo</strong>
-          <p>
-            Use o menu lateral para acompanhar alunos, planos, matriculas,
-            pagamentos e check-ins em um fluxo unico de atendimento.
-          </p>
-        </article>
-
-        <article className="overview-panel is-compact">
-          <span className="overview-label">Status</span>
-          <strong>
-            {data.loading ? 'Carregando dados...' : data.error ? 'Erro nos dados' : 'Dados atualizados'}
-          </strong>
-          <p>{data.error ?? 'Dados carregados diretamente dos modulos disponiveis.'}</p>
-        </article>
-      </section>
-
-      <section className="metric-grid">
-        <MetricCard
-          title="Alunos ativos"
-          value={data.alunosAtivos ?? '-'}
-          helper="Base de alunos em acompanhamento"
-          loading={data.loading}
-          error={data.error ?? null}
-          actionLabel="Ver alunos"
-          onAction={() => goTo(withQuery(appPaths.alunos, { status: 'ATIVO' }))}
-        />
-
-        <MetricCard
-          title="Matriculas ativas"
-          value={data.matriculasAtivas ?? '-'}
-          helper="Contratos vigentes no periodo"
-          loading={data.loading}
-          error={data.error ?? null}
-          actionLabel="Ver matriculas"
-          onAction={() => goTo(withQuery(appPaths.matriculas, { status: 'ATIVA' }))}
-        />
-
-        <MetricCard
-          title="Pagamentos pendentes"
-          value={data.pagamentosPendentes ?? '-'}
-          helper="Itens financeiros a acompanhar"
-          loading={data.loading}
-          error={data.error ?? null}
-          actionLabel="Cobrar"
-          onAction={() => goTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
-        />
-
-        <MetricCard
-          title="Check-ins hoje"
-          value={data.checkinsHoje ?? '-'}
-          helper="Movimento registrado no dia"
-          loading={data.loading}
-          error={data.error ?? null}
-          actionLabel="Ver acessos"
-          onAction={() => goTo(appPaths.checkins)}
-        />
-
-        <MetricCard
-          title="Receita mensal"
-          value={data.receitaMensal ?? '-'}
-          helper="Resumo financeiro do mes"
-          loading={data.loading}
-          error={data.error ?? null}
-          actionLabel="Ver pagos"
-          onAction={() => goTo(withQuery(appPaths.pagamentos, { status: 'PAGO' }))}
-        />
-      </section>
-
-      <section className="dashboard-actions">
-        <div className="dashboard-actions-header">
-          <div>
-            <span className="overview-label">Resumo operacional</span>
-            <h2>Atencao imediata</h2>
-            <p>Os principais pontos abaixo ajudam a priorizar as decisoes de gestao do dia.</p>
-          </div>
-        </div>
-
-        <div className="dashboard-action-list">
-          {data.loading ? (
-            <div className="dashboard-action-item">
-              <LoadingSpinner size={18} />
-              <div>
-                <strong>Carregando recomendacoes do painel</strong>
-                <p>Os dados estao sendo carregados diretamente da API.</p>
-              </div>
-            </div>
-          ) : data.error ? (
-            <div className="dashboard-action-item dashboard-action-item--error">
-              <strong>Erro ao carregar as recomendacoes</strong>
-              <p>{data.error}</p>
-            </div>
-          ) : dashboardActions.length > 0 ? (
-            dashboardActions.map((action) => (
-              <div
-                key={action.title}
-                className={`dashboard-action-item ${action.tone === 'error' ? 'dashboard-action-item--error' : ''}`}
-              >
-                <div className="dashboard-action-icon" aria-hidden />
-                <div>
-                  <strong>{action.title}</strong>
-                  <p>{action.detail}</p>
-                </div>
-                <button className="ghost-button btn-sm" type="button" onClick={() => goTo(action.path)}>
-                  {action.actionLabel}
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="dashboard-action-item dashboard-action-item--success">
-              <div className="dashboard-action-icon" aria-hidden />
-              <div>
-                <strong>Painel pronto para uso</strong>
-                <p>Os dados estao atualizados e o fluxo operacional esta visivel.</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="dashboard-section">
-        <h2>Fila operacional</h2>
-        <p className="section-description">Itens prontos para acao, com foco em pagamentos pendentes.</p>
-        <div className="operations-grid">
-          <PaymentQueueCard
-            title="Pagamentos pendentes"
-            emptyMessage="Nenhum pagamento pendente na fila."
-            items={data.pagamentosPendentesLista ?? []}
-            loading={data.loading}
-            onViewAll={() => goTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
+          <span
+            className={`api-status-dot ${
+              data.loading ? 'is-loading' : data.error ? 'is-error' : 'is-ok'
+            }`}
+            title={
+              data.loading ? 'Conectando...'
+              : data.error ? 'API indisponivel'
+              : 'API conectada'
+            }
           />
         </div>
       </section>
 
-      <section className="dashboard-section">
-        <h2>Visao gerencial</h2>
-        <p className="section-description">Indicadores que mostram a situacao financeira e o movimento de acesso.</p>
-        <div className="charts-grid">
-          <ChartCard
-            title="Status dos pagamentos"
-            description="Distribuicao dos pagamentos por situacao financeira."
-            loading={data.loading}
-            error={data.error ?? null}
-          >
-            {data.pagamentosPorStatus && data.pagamentosPorStatus.length > 0 ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
-                <PaymentsStatusChart data={data.pagamentosPorStatus} />
-              </Suspense>
-            ) : (
-              <EmptyChartState message="Nenhum pagamento registrado ainda. Registre cobrancas para visualizar a distribuicao financeira." />
-            )}
-          </ChartCard>
-
-          <ChartCard
-            title="Check-ins ultimos 7 dias"
-            description="Movimento registrado na academia nos ultimos 7 dias."
-            loading={data.loading}
-            error={data.error ?? null}
-          >
-            {data.checkinsPorDia && data.checkinsPorDia.length > 0 ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
-                <CheckinsLast7DaysChart data={data.checkinsPorDia} />
-              </Suspense>
-            ) : (
-              <EmptyChartState message="Nenhum check-in encontrado nos ultimos 7 dias." />
-            )}
-          </ChartCard>
-        </div>
+      {/* ── KPIs primários ───────────────────────────────────────────────── */}
+      <section className="metric-grid" aria-label="Indicadores principais">
+        <MetricCard
+          title="Alunos ativos"
+          value={data.alunosAtivos ?? '-'}
+          helper="Base operacional ativa"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver alunos"
+          onAction={() => navigateTo(withQuery(appPaths.alunos, { status: 'ATIVO' }))}
+        />
+        <MetricCard
+          title="Matriculas ativas"
+          value={data.matriculasAtivas ?? '-'}
+          helper="Contratos vigentes"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver matriculas"
+          onAction={() => navigateTo(withQuery(appPaths.matriculas, { status: 'ATIVA' }))}
+        />
+        <MetricCard
+          title="Check-ins hoje"
+          value={data.checkinsHoje ?? '-'}
+          helper="Entradas registradas no dia"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver acessos"
+          onAction={() => navigateTo(appPaths.checkins)}
+        />
+        <MetricCard
+          title="Receita mensal"
+          value={data.receitaMensal ?? '-'}
+          helper="Pagamentos confirmados no mes"
+          loading={data.loading}
+          error={data.error ?? null}
+          actionLabel="Ver pagos"
+          onAction={() => navigateTo(withQuery(appPaths.pagamentos, { status: 'PAGO' }))}
+        />
+        <MetricCard
+          title="Pagamentos pendentes"
+          value={data.pagamentosPendentes ?? '-'}
+          helper="Aguardando confirmacao"
+          loading={data.loading}
+          error={data.error ?? null}
+          variant={(data.pagamentosPendentes ?? 0) >= 3 ? 'warning' : 'default'}
+          actionLabel="Cobrar"
+          onAction={() => navigateTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
+        />
       </section>
 
-      <section className="dashboard-section">
-        <h2>Financeiro e matriculas</h2>
-        <p className="section-description">Dados financeiros e de matriculas para apoiar o controle operacional.</p>
-        <div className="charts-grid">
-          <ChartCard
-            title="Receita (ultimos 6 meses)"
-            description="Receita confirmada a partir de pagamentos pagos."
-            loading={data.loading}
-            error={data.error ?? null}
-          >
-            {data.receitaPorMes && data.receitaPorMes.some((m) => m.value > 0) ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
-                <RevenueByMonthChart data={data.receitaPorMes} />
-              </Suspense>
-            ) : (
-              <EmptyChartState message="Ainda nao ha receita confirmada nos ultimos 6 meses. Pagamentos PAGO serao exibidos aqui." />
-            )}
-          </ChartCard>
-
-          <ChartCard
-            title="Matriculas por status"
-            description="Situacao atual das matriculas cadastradas."
-            loading={data.loading}
-            error={data.error ?? null}
-          >
-            {data.matriculasPorStatus && data.matriculasPorStatus.length > 0 ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
-                <MatriculasStatusChart data={data.matriculasPorStatus} />
-              </Suspense>
-            ) : (
-              <EmptyChartState message="Nenhuma matricula encontrada. Cadastre matriculas para acompanhar o desempenho." />
-            )}
-          </ChartCard>
-        </div>
+      {/* ── KPIs secundários ─────────────────────────────────────────────── */}
+      <section className="kpi-secondary" aria-label="Indicadores operacionais">
+        <KpiSecondaryItem
+          label="Inadimplencia"
+          value={data.loading ? '...' : `${data.taxaInadimplencia ?? 0}%`}
+          detail={data.inadimplentes !== undefined
+            ? `${data.inadimplentes} aluno(s) com atraso`
+            : undefined}
+          variant={inadimplenciaVariant}
+          loading={data.loading}
+          onClick={() => navigateTo(withQuery(appPaths.alunos, { status: 'INADIMPLENTE' }))}
+        />
+        <KpiSecondaryItem
+          label="Novos este mes"
+          value={data.loading ? '...' : String(data.alunosNovosEsteMes ?? 0)}
+          detail="Alunos cadastrados no periodo"
+          variant="default"
+          loading={data.loading}
+          onClick={() => navigateTo(appPaths.alunos)}
+        />
+        <KpiSecondaryItem
+          label="Vencendo em 7 dias"
+          value={data.loading ? '...' : String(data.matriculasAVencer7dias ?? 0)}
+          detail="Matriculas ativas proximas do vencimento"
+          variant={vencimentoVariant}
+          loading={data.loading}
+          onClick={() => navigateTo(withQuery(appPaths.matriculas, { status: 'ATIVA' }))}
+        />
+        <KpiSecondaryItem
+          label="Ticket medio"
+          value={data.loading ? '...' : (data.ticketMedio ?? '-')}
+          detail="Receita mensal por aluno ativo"
+          variant="default"
+          loading={data.loading}
+          onClick={() => navigateTo(withQuery(appPaths.pagamentos, { status: 'PAGO' }))}
+        />
       </section>
+
+      {/* ── Alertas operacionais ─────────────────────────────────────────── */}
+      {alerts.length > 0 && (
+        <section className="dashboard-alerts" aria-label="Alertas operacionais">
+          {alerts.map((alert) => (
+            <div
+              key={alert.title}
+              className={`dashboard-alert-item ${alert.isError ? 'is-error' : ''}`}
+            >
+              <div className="dashboard-alert-icon" aria-hidden="true">
+                {alert.isError ? '!' : '~'}
+              </div>
+              <div className="dashboard-alert-body">
+                <strong>{alert.title}</strong>
+                <p>{alert.detail}</p>
+              </div>
+              <button
+                className="ghost-button btn-sm"
+                type="button"
+                onClick={() => navigateTo(alert.path)}
+              >
+                {alert.actionLabel}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* ── Fila de cobrança + Check-ins 7d ─────────────────────────────── */}
+      <section className="dashboard-grid-2">
+        <PaymentQueueCard
+          items={data.pagamentosPendentesLista ?? []}
+          loading={data.loading}
+          onViewAll={() => navigateTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
+        />
+        <ChartCard
+          title="Check-ins — ultimos 7 dias"
+          description="Frequencia de entradas registradas na academia."
+          loading={data.loading}
+          error={data.error ?? null}
+        >
+          {data.checkinsPorDia && data.checkinsPorDia.length > 0 ? (
+            <Suspense fallback={<ChartFallback />}>
+              <CheckinsLast7DaysChart data={data.checkinsPorDia} />
+            </Suspense>
+          ) : (
+            <EmptyChartState message="Nenhum check-in nos ultimos 7 dias." />
+          )}
+        </ChartCard>
+      </section>
+
+      {/* ── Receita 6m + Status pagamentos ──────────────────────────────── */}
+      <section className="dashboard-grid-2">
+        <ChartCard
+          title="Receita — ultimos 6 meses"
+          description="Pagamentos confirmados por mes."
+          loading={data.loading}
+          error={data.error ?? null}
+        >
+          {data.receitaPorMes && data.receitaPorMes.some((m) => m.value > 0) ? (
+            <Suspense fallback={<ChartFallback />}>
+              <RevenueByMonthChart data={data.receitaPorMes} />
+            </Suspense>
+          ) : (
+            <EmptyChartState message="Nenhuma receita confirmada nos ultimos 6 meses." />
+          )}
+        </ChartCard>
+        <ChartCard
+          title="Distribuicao de pagamentos"
+          description="Proporcao por situacao financeira."
+          loading={data.loading}
+          error={data.error ?? null}
+        >
+          {data.pagamentosPorStatus && data.pagamentosPorStatus.length > 0 ? (
+            <Suspense fallback={<ChartFallback />}>
+              <PaymentsStatusChart data={data.pagamentosPorStatus} />
+            </Suspense>
+          ) : (
+            <EmptyChartState message="Nenhum pagamento registrado ainda." />
+          )}
+        </ChartCard>
+      </section>
+
+      {/* ── Matriculas por status ────────────────────────────────────────── */}
+      <section className="dashboard-grid-2">
+        <ChartCard
+          title="Matriculas por status"
+          description="Situacao atual dos contratos cadastrados."
+          loading={data.loading}
+          error={data.error ?? null}
+        >
+          {data.matriculasPorStatus && data.matriculasPorStatus.length > 0 ? (
+            <Suspense fallback={<ChartFallback />}>
+              <MatriculasStatusChart data={data.matriculasPorStatus} />
+            </Suspense>
+          ) : (
+            <EmptyChartState message="Nenhuma matricula encontrada." />
+          )}
+        </ChartCard>
+      </section>
+
     </div>
   )
 }
 
+/* ── Sub-componentes ──────────────────────────────────────────────────────── */
+
+type KpiSecondaryItemProps = {
+  label: string
+  value: string
+  detail?: string
+  variant: 'default' | 'warning' | 'danger'
+  loading: boolean
+  onClick: () => void
+}
+
+function KpiSecondaryItem({ label, value, detail, variant, loading, onClick }: KpiSecondaryItemProps) {
+  return (
+    <button
+      type="button"
+      className={`kpi-secondary-item kpi-secondary-item--${variant}`}
+      onClick={onClick}
+    >
+      <span className="kpi-secondary-label">{label}</span>
+      {loading ? (
+        <span className="kpi-secondary-value kpi-secondary-value--loading">
+          <LoadingSpinner size={16} />
+        </span>
+      ) : (
+        <span className="kpi-secondary-value">{value}</span>
+      )}
+      {detail && <span className="kpi-secondary-detail">{detail}</span>}
+    </button>
+  )
+}
+
 function PaymentQueueCard({
-  emptyMessage,
   items,
   loading,
   onViewAll,
-  title,
 }: {
-  emptyMessage: string
   items: DashboardPaymentItem[]
   loading: boolean
   onViewAll: () => void
-  title: string
 }) {
   return (
     <article className="operation-card">
       <header className="operation-card-header">
-        <strong>{title}</strong>
+        <strong>Fila de cobranca</strong>
         <button className="ghost-button btn-sm" type="button" onClick={onViewAll}>
           Ver todos
         </button>
@@ -315,20 +308,18 @@ function PaymentQueueCard({
       {loading ? (
         <div className="operation-card-loading">
           <LoadingSpinner size={18} />
-          <span>Carregando fila...</span>
+          <span>Carregando...</span>
         </div>
       ) : items.length > 0 ? (
         <div className="operation-list">
           {items.map((item) => (
             <button
-              key={`${title}-${item.id}`}
+              key={item.id}
               className="operation-item"
               type="button"
               onClick={onViewAll}
             >
-              <span>
-                <strong>{item.alunoNome ?? `Pagamento #${item.id}`}</strong>
-              </span>
+              <strong>{item.alunoNome ?? `Pagamento #${item.id}`}</strong>
               <span className="operation-item-side">
                 <StatusBadge status={item.status} />
                 <strong>{formatMoney(item.valor)}</strong>
@@ -337,15 +328,88 @@ function PaymentQueueCard({
           ))}
         </div>
       ) : (
-        <p className="operation-empty">{emptyMessage}</p>
+        <p className="operation-empty">Nenhum pagamento pendente.</p>
       )}
     </article>
   )
 }
 
+function ChartFallback() {
+  return (
+    <div className="chart-loading-fallback">
+      <LoadingSpinner size={18} />
+      <small>Carregando...</small>
+    </div>
+  )
+}
+
+/* ── Utilitários ──────────────────────────────────────────────────────────── */
+
+type Alert = {
+  title: string
+  detail: string
+  actionLabel: string
+  path: string
+  isError: boolean
+}
+
+function buildAlerts(data: ReturnType<typeof useDashboardData>): Alert[] {
+  if (data.loading || data.error) return []
+
+  const alerts: Alert[] = []
+
+  if ((data.taxaInadimplencia ?? 0) >= 15) {
+    alerts.push({
+      title: `Inadimplencia em ${data.taxaInadimplencia}% da base ativa`,
+      detail: `${data.inadimplentes} aluno(s) com pagamento em atraso. Acoes preventivas reduzem churn.`,
+      actionLabel: 'Ver inadimplentes',
+      path: withQuery(appPaths.alunos, { status: 'INADIMPLENTE' }),
+      isError: (data.taxaInadimplencia ?? 0) >= 25,
+    })
+  }
+
+  if ((data.pagamentosPendentes ?? 0) >= 3) {
+    alerts.push({
+      title: `${data.pagamentosPendentes} pagamento(s) aguardando confirmacao`,
+      detail: 'Confirme recebimentos para manter o fluxo financeiro atualizado.',
+      actionLabel: 'Confirmar',
+      path: withQuery(appPaths.pagamentos, { status: 'PENDENTE' }),
+      isError: (data.pagamentosPendentes ?? 0) >= 8,
+    })
+  }
+
+  if ((data.matriculasAVencer7dias ?? 0) > 0) {
+    alerts.push({
+      title: `${data.matriculasAVencer7dias} matricula(s) vencem nos proximos 7 dias`,
+      detail: 'Entre em contato proativamente para garantir renovacoes.',
+      actionLabel: 'Ver matriculas',
+      path: withQuery(appPaths.matriculas, { status: 'ATIVA' }),
+      isError: false,
+    })
+  }
+
+  if (data.checkinsHoje === 0) {
+    alerts.push({
+      title: 'Nenhum check-in registrado hoje',
+      detail: 'Verifique se a operacao de acesso esta ativa.',
+      actionLabel: 'Ver acessos',
+      path: appPaths.checkins,
+      isError: false,
+    })
+  }
+
+  return alerts
+}
+
+function resolveFirstName(
+  user: { nome?: string; name?: string; username?: string; email?: string } | null | undefined,
+) {
+  const raw = user?.nome ?? user?.name ?? user?.username ?? user?.email ?? 'Admin'
+  return raw.split(/[\s@]/)[0]
+}
+
 function withQuery(path: string, params: Record<string, string>) {
-  const search = new URLSearchParams(params)
-  return `${path}?${search.toString()}`
+  return `${path}?${new URLSearchParams(params).toString()}`
 }
 
 function formatMoney(value: number) {

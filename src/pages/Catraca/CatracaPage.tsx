@@ -647,7 +647,6 @@ function getPaymentDate(pagamento: Pagamento) {
   return (
     pagamento.dataPagamento ??
     pagamento.dataCadastro ??
-    pagamento.dataVencimento ??
     ''
   )
 }
@@ -732,11 +731,11 @@ function formatOptionalDateTime(value?: string | null) {
 }
 
 function getMatriculaEndDate(matricula: Matricula) {
-  return matricula.dataFim ?? matricula.dataVencimento
+  return matricula.dataFim
 }
 
 function getMatriculaPlanoName(matricula: Matricula) {
-  return matricula.planoNome ?? matricula.plano?.nome ?? 'Plano ativo'
+  return matricula.planoNome ?? 'Plano ativo'
 }
 
 function formatMoney(value: number) {

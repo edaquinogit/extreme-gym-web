@@ -7,9 +7,11 @@ import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { StateMessage } from '../../components/ui/StateMessage'
 import { StatusDropdown } from '../../components/ui/StatusDropdown'
+import { MatriculaWizard } from '../../components/wizard/MatriculaWizard'
 import { useApiError } from '../../hooks/useApiError'
 import { useResourceList } from '../../hooks/useResourceList'
-import { useCurrentSearch } from '../../app/routes/router'
+import { useCurrentSearch, navigateTo } from '../../app/routes/router'
+import { buildAlunoPerfil } from '../../app/routes/paths'
 import { alunoService } from '../../services/alunoService'
 import type { Aluno, StatusAluno } from '../../types/aluno'
 import { formatDate } from '../../utils/formatDate'
@@ -66,6 +68,7 @@ export function AlunosPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
+  const [isWizardOpen, setIsWizardOpen] = useState(false)
 
   const filteredAlunos = useMemo(() => {
     const normalizedQuery = normalizeText(query)
@@ -138,15 +141,6 @@ export function AlunosPage() {
     setPage(1)
   }
 
-  function openCreateModal() {
-    setEditingAluno(null)
-    setFormData(EMPTY_FORM)
-    setFormError(null)
-    setActionMessage(null)
-    setStatusError(null)
-    setIsFormOpen(true)
-  }
-
   function openEditModal(aluno: Aluno) {
     setEditingAluno(aluno)
     setFormData({
@@ -213,6 +207,12 @@ export function AlunosPage() {
     }
   }
 
+  function handleWizardComplete(novoAluno: Aluno) {
+    setAlunos((current) => [novoAluno, ...current])
+    setActionMessage(`Aluno ${novoAluno.nome} matriculado com sucesso.`)
+    setIsWizardOpen(false)
+  }
+
   async function handleRemoveAluno() {
     if (!removingAluno) {
       return
@@ -248,7 +248,7 @@ export function AlunosPage() {
         eyebrow="Alunos"
         title="Alunos cadastrados"
         description="Gerencie dados de contato e status operacional dos alunos."
-        action={<button className="primary-button compact" type="button" onClick={openCreateModal}>Novo aluno</button>}
+        action={<button className="primary-button compact" type="button" onClick={() => setIsWizardOpen(true)}>+ Matricular aluno</button>}
       />
 
       <div className="toolbar">
@@ -323,6 +323,13 @@ export function AlunosPage() {
                     <td>{formatDate(aluno.dataCadastro)}</td>
                     <td>
                       <div className="table-actions">
+                        <button
+                          className="primary-button btn-sm"
+                          type="button"
+                          onClick={() => navigateTo(buildAlunoPerfil(aluno.id))}
+                        >
+                          Ver perfil
+                        </button>
                         <button className="ghost-button btn-sm" type="button" onClick={() => openEditModal(aluno)}>
                           Editar
                         </button>
@@ -386,6 +393,12 @@ export function AlunosPage() {
           </div>
         </form>
       </Modal>
+
+      <MatriculaWizard
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onComplete={handleWizardComplete}
+      />
 
       <ConfirmDialog
         isOpen={Boolean(removingAluno)}

@@ -1,5 +1,7 @@
 import React from 'react'
 
+type MetricVariant = 'default' | 'warning' | 'danger'
+
 type MetricCardProps = {
   title: string
   value?: React.ReactNode
@@ -8,6 +10,7 @@ type MetricCardProps = {
   error?: string | null
   actionLabel?: string
   onAction?: () => void
+  variant?: MetricVariant
 }
 
 export function MetricCard({
@@ -18,9 +21,14 @@ export function MetricCard({
   onAction,
   title,
   value,
+  variant = 'default',
 }: MetricCardProps) {
   return (
-    <article className="metric-card" role="group" aria-label={title}>
+    <article
+      className={`metric-card metric-card--${variant}`}
+      role="group"
+      aria-label={title}
+    >
       <div className="metric-card-header">
         <span>{title}</span>
         <i aria-hidden="true" />

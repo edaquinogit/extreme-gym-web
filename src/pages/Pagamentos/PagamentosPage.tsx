@@ -12,7 +12,9 @@ import { useApiError } from '../../hooks/useApiError'
 import { useResourceList } from '../../hooks/useResourceList'
 import { matriculaService } from '../../services/matriculaService'
 import { pagamentoService } from '../../services/pagamentoService'
+import { planoService } from '../../services/planoService'
 import type { Matricula } from '../../types/matricula'
+import type { Plano } from '../../types/plano'
 import type { FormaPagamento, Pagamento, PagamentoRequestDTO, StatusPagamento } from '../../types/pagamento'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { formatDate } from '../../utils/formatDate'
@@ -20,6 +22,13 @@ import { formatDate } from '../../utils/formatDate'
 const PAGE_SIZE = 8
 const STATUS_FILTERS: Array<StatusPagamento | 'TODOS'> = ['TODOS', 'PENDENTE', 'PAGO', 'CANCELADO']
 const FORMAS_PAGAMENTO: FormaPagamento[] = ['PIX', 'DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO']
+
+const FORMA_LABELS: Record<FormaPagamento, string> = {
+  PIX: 'Pix',
+  DINHEIRO: 'Dinheiro',
+  CARTAO_CREDITO: 'Cartao de credito',
+  CARTAO_DEBITO: 'Cartao de debito',
+}
 
 type PagamentoFormState = {
   matriculaId: string
@@ -39,6 +48,7 @@ export function PagamentosPage() {
   } = useResourceList({ load: pagamentoService.listar })
   const { getErrorMessage } = useApiError()
   const currentSearch = useCurrentSearch()
+
   const [query, setQuery] = useState(() => getInitialSearchParam('q'))
   const [statusFilter, setStatusFilter] = useState<StatusPagamento | 'TODOS'>(() =>
     getInitialStatusFilter(),
@@ -49,9 +59,11 @@ export function PagamentosPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isLoadingModal, setIsLoadingModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isCanceling, setIsCanceling] = useState(false)
   const [matriculasAtivas, setMatriculasAtivas] = useState<Matricula[]>([])
+  const [planos, setPlanos] = useState<Plano[]>([])
 
   const filteredPagamentos = useMemo(() => {
     const normalizedQuery = normalizeText(query)
@@ -87,13 +99,33 @@ export function PagamentosPage() {
     return () => window.clearTimeout(timeoutId)
   }, [currentSearch])
 
+  // Auto-fill valor when matriculaId changes
+  useEffect(() => {
+    if (!formData.matriculaId) return
+    const matricula = matriculasAtivas.find((m) => String(m.id) === formData.matriculaId)
+    if (!matricula?.planoId) return
+    const plano = planos.find((p) => p.id === matricula.planoId)
+    if (plano) {
+      setFormData((f) => ({ ...f, valor: String(plano.valorMensal) }))
+    }
+  }, [formData.matriculaId, matriculasAtivas, planos])
+
   async function openCreateModal() {
     setFormData(EMPTY_FORM)
     setFormError(null)
     setActionMessage(null)
-    const all = await matriculaService.listar()
-    setMatriculasAtivas(all.filter((m) => m.status === 'ATIVA'))
+    setIsLoadingModal(true)
     setIsFormOpen(true)
+    try {
+      const [all, allPlanos] = await Promise.all([
+        matriculaService.listar(),
+        planoService.listar(),
+      ])
+      setMatriculasAtivas(all.filter((m) => m.status === 'ATIVA'))
+      setPlanos(allPlanos)
+    } finally {
+      setIsLoadingModal(false)
+    }
   }
 
   function closeForm() {
@@ -131,7 +163,7 @@ export function PagamentosPage() {
       setIsSaving(true)
       const saved = await pagamentoService.registrar(payload)
       setPagamentos((current) => [saved, ...current])
-      setActionMessage('Pagamento registrado com sucesso.')
+      setActionMessage(`Pagamento de ${formatCurrency(saved.valor)} registrado para ${saved.alunoNome ?? 'aluno'}.`)
       closeForm()
     } catch (error) {
       setFormError(getErrorMessage(error))
@@ -159,6 +191,13 @@ export function PagamentosPage() {
       setIsCanceling(false)
     }
   }
+
+  const selectedMatricula = matriculasAtivas.find(
+    (m) => String(m.id) === formData.matriculaId,
+  )
+  const valorSugerido = selectedMatricula?.planoId
+    ? planos.find((p) => p.id === selectedMatricula.planoId)?.valorMensal
+    : undefined
 
   return (
     <>
@@ -197,7 +236,7 @@ export function PagamentosPage() {
         >
           {STATUS_FILTERS.map((status) => (
             <option key={status} value={status}>
-              {status === 'TODOS' ? 'Todos os status' : formatStatus(status)}
+              {status === 'TODOS' ? 'Todos os status' : status}
             </option>
           ))}
         </select>
@@ -223,14 +262,14 @@ export function PagamentosPage() {
         )}
         {!isLoading && !errorMessage && filteredPagamentos.length > 0 && (
           <>
-            <DataTable headers={['ID', 'Aluno', 'Matricula', 'Valor', 'Forma', 'Status', 'Pagamento', 'Acoes']}>
+            <DataTable headers={['ID', 'Aluno', 'Matricula', 'Valor', 'Forma', 'Status', 'Data pag.', 'Acoes']}>
               {visiblePagamentos.map((pagamento) => (
                 <tr key={pagamento.id}>
                   <td>{pagamento.id}</td>
                   <td>{pagamento.alunoNome ?? '-'}</td>
                   <td>{pagamento.matriculaId ?? '-'}</td>
-                  <td>{formatCurrency(pagamento.valor)}</td>
-                  <td>{pagamento.formaPagamento ? formatStatus(pagamento.formaPagamento) : '-'}</td>
+                  <td><strong>{formatCurrency(pagamento.valor)}</strong></td>
+                  <td>{pagamento.formaPagamento ? FORMA_LABELS[pagamento.formaPagamento] ?? pagamento.formaPagamento : '-'}</td>
                   <td><StatusBadge status={pagamento.status} /></td>
                   <td>{formatDate(pagamento.dataPagamento ?? undefined)}</td>
                   <td>
@@ -258,65 +297,96 @@ export function PagamentosPage() {
       </section>
 
       <Modal isOpen={isFormOpen} title="Registrar pagamento" onClose={closeForm}>
-        <form onSubmit={(event) => void handleSubmit(event)}>
-          <FormField label="Matricula ativa">
-            <select
-              className="form-control"
-              value={formData.matriculaId}
-              onChange={(event) => setFormData((f) => ({ ...f, matriculaId: event.target.value }))}
-            >
-              <option value="">Selecione uma matricula...</option>
-              {matriculasAtivas.map((m) => (
-                <option key={m.id} value={m.id}>
-                  #{m.id} — {m.alunoNome ?? 'Aluno'} / {m.planoNome ?? 'Plano'}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label="Valor (R$)">
-            <input
-              className="form-control"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={formData.valor}
-              onChange={(event) => setFormData((f) => ({ ...f, valor: event.target.value }))}
-            />
-          </FormField>
-          <FormField label="Forma de pagamento">
-            <select
-              className="form-control"
-              value={formData.formaPagamento}
-              onChange={(event) =>
-                setFormData((f) => ({ ...f, formaPagamento: event.target.value as FormaPagamento }))
-              }
-            >
-              <option value="">Selecione...</option>
-              {FORMAS_PAGAMENTO.map((forma) => (
-                <option key={forma} value={forma}>
-                  {formatStatus(forma)}
-                </option>
-              ))}
-            </select>
-          </FormField>
+        {isLoadingModal ? (
+          <StateMessage title="Carregando matriculas..." />
+        ) : (
+          <form onSubmit={(event) => void handleSubmit(event)}>
+            <FormField label="Matricula ativa">
+              <select
+                className="form-control"
+                value={formData.matriculaId}
+                autoFocus
+                onChange={(event) =>
+                  setFormData((f) => ({ ...f, matriculaId: event.target.value }))
+                }
+              >
+                <option value="">Selecione uma matricula...</option>
+                {matriculasAtivas.map((m) => {
+                  const plano = planos.find((p) => p.id === m.planoId)
+                  const preco = plano ? ` — ${formatCurrency(plano.valorMensal)}` : ''
+                  return (
+                    <option key={m.id} value={m.id}>
+                      #{m.id} {m.alunoNome ?? 'Aluno'} / {m.planoNome ?? 'Plano'}{preco}
+                    </option>
+                  )
+                })}
+              </select>
+              {selectedMatricula && (
+                <p className="field-hint">
+                  Validade: {formatDate(selectedMatricula.dataFim)}
+                  {valorSugerido !== undefined && (
+                    <> &middot; Valor do plano: <strong>{formatCurrency(valorSugerido)}</strong></>
+                  )}
+                </p>
+              )}
+            </FormField>
 
-          {formError && <p className="form-error">{formError}</p>}
+            <FormField label="Valor (R$)">
+              <input
+                className="form-control"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={formData.valor}
+                placeholder={valorSugerido !== undefined ? String(valorSugerido) : '0,00'}
+                onChange={(event) => setFormData((f) => ({ ...f, valor: event.target.value }))}
+              />
+              {valorSugerido !== undefined && formData.valor !== String(valorSugerido) && (
+                <button
+                  type="button"
+                  className="field-hint-link"
+                  onClick={() => setFormData((f) => ({ ...f, valor: String(valorSugerido) }))}
+                >
+                  Usar valor do plano ({formatCurrency(valorSugerido)})
+                </button>
+              )}
+            </FormField>
 
-          <div className="form-actions">
-            <button className="ghost-button" type="button" disabled={isSaving} onClick={closeForm}>
-              Cancelar
-            </button>
-            <button className="primary-button" type="submit" disabled={isSaving}>
-              {isSaving ? 'Registrando...' : 'Registrar'}
-            </button>
-          </div>
-        </form>
+            <FormField label="Forma de pagamento">
+              <select
+                className="form-control"
+                value={formData.formaPagamento}
+                onChange={(event) =>
+                  setFormData((f) => ({ ...f, formaPagamento: event.target.value as FormaPagamento }))
+                }
+              >
+                <option value="">Selecione...</option>
+                {FORMAS_PAGAMENTO.map((forma) => (
+                  <option key={forma} value={forma}>
+                    {FORMA_LABELS[forma]}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+
+            {formError && <p className="form-error">{formError}</p>}
+
+            <div className="form-actions">
+              <button className="ghost-button" type="button" disabled={isSaving} onClick={closeForm}>
+                Cancelar
+              </button>
+              <button className="primary-button" type="submit" disabled={isSaving || !formData.matriculaId}>
+                {isSaving ? 'Registrando...' : 'Registrar pagamento'}
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       <ConfirmDialog
         isOpen={Boolean(cancelingPagamento)}
         title="Cancelar pagamento"
-        description={`Confirma o cancelamento do pagamento #${cancelingPagamento?.id ?? ''}?`}
+        description={`Confirma o cancelamento do pagamento #${cancelingPagamento?.id ?? ''}${cancelingPagamento?.alunoNome ? ` de ${cancelingPagamento.alunoNome}` : ''}?`}
         confirmLabel="Cancelar pagamento"
         isLoading={isCanceling}
         onCancel={() => setCancelingPagamento(null)}
@@ -331,10 +401,6 @@ function normalizeText(value: string | number) {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
-}
-
-function formatStatus(status: string) {
-  return status.replaceAll('_', ' ')
 }
 
 function getInitialSearchParam(key: string) {

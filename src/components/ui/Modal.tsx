@@ -5,13 +5,16 @@ type ModalProps = {
   onClose: () => void
   title: string
   children: ReactNode
+  className?: string
 }
 
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!isOpen) {
@@ -19,18 +22,20 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     }
 
     const previouslyFocused = document.activeElement
-    const focusableElements = getFocusableElements(modalRef.current)
 
-    if (focusableElements[0]) {
-      focusableElements[0].focus()
-    } else {
-      modalRef.current?.focus()
-    }
+    // Focus the first input/select, falling back to the modal container.
+    // Skips the close button (first in DOM order) by looking past buttons.
+    const allFocusable = getFocusableElements(modalRef.current)
+    const firstInput = allFocusable.find(
+      (el) => el.tagName !== 'BUTTON',
+    )
+    const target = firstInput ?? allFocusable[0] ?? modalRef.current
+    target?.focus()
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
 
@@ -68,7 +73,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         previouslyFocused.focus()
       }
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) {
     return null
@@ -82,7 +87,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     >
       <div
         ref={modalRef}
-        className="modal-box"
+        className={className ? `modal-box ${className}` : 'modal-box'}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

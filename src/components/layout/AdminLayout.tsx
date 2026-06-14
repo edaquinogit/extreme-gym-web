@@ -4,7 +4,7 @@ import { navigateTo, useCurrentPath } from '../../app/routes/router'
 import { BrandLogo } from '../brand/BrandLogo'
 import { useAuth } from '../../hooks/useAuth'
 
-const navigationItems = [
+const BASE_NAV_ITEMS = [
   { compactLabel: 'IN', label: 'Inicio', path: appPaths.dashboard },
   { compactLabel: 'AL', label: 'Alunos', path: appPaths.alunos },
   { compactLabel: 'PL', label: 'Planos', path: appPaths.planos },
@@ -13,6 +13,10 @@ const navigationItems = [
   { compactLabel: 'CH', label: 'Check-ins', path: appPaths.checkins },
   { compactLabel: 'AC', label: 'Acesso', path: appPaths.acessos },
   { compactLabel: 'CA', label: 'Catraca', path: appPaths.catraca },
+]
+
+const ADMIN_NAV_ITEMS = [
+  { compactLabel: 'US', label: 'Usuarios', path: appPaths.usuarios },
 ]
 
 type AdminLayoutProps = {
@@ -24,6 +28,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const currentPath = useCurrentPath()
   const { logout, user } = useAuth()
+
+  const navigationItems = user?.role === 'ADMIN'
+    ? [...BASE_NAV_ITEMS, ...ADMIN_NAV_ITEMS]
+    : BASE_NAV_ITEMS
 
   function handleNavigate(path: string) {
     navigateTo(path)

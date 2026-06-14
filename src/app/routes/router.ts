@@ -41,6 +41,26 @@ export function useNavigate() {
   return useCallback((path: string) => navigateTo(path), [])
 }
 
+export function matchPath(pattern: string, path: string): Record<string, string> | null {
+  const patternParts = pattern.split('/')
+  const pathParts = path.split('/')
+
+  if (patternParts.length !== pathParts.length) return null
+
+  const params: Record<string, string> = {}
+
+  for (let i = 0; i < patternParts.length; i++) {
+    const seg = patternParts[i]
+    if (seg?.startsWith(':')) {
+      params[seg.slice(1)] = pathParts[i] ?? ''
+    } else if (seg !== pathParts[i]) {
+      return null
+    }
+  }
+
+  return params
+}
+
 export function useRedirect(shouldRedirect: boolean, path: string) {
   useEffect(() => {
     if (shouldRedirect) {
