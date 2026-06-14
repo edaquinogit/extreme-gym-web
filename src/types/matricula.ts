@@ -1,22 +1,14 @@
-export type StatusMatricula =
-  | 'ATIVA'
-  | 'PENDENTE'
-  | 'CANCELADA'
-  | 'EXPIRADA'
-  | 'VENCIDA'
+export type StatusMatricula = 'ATIVA' | 'VENCIDA' | 'CANCELADA'
 
 export type Matricula = {
   id: number
   alunoId?: number
   alunoNome?: string
-  aluno?: { id: number; nome: string }
   planoId?: number
   planoNome?: string
-  plano?: { id: number; nome: string }
   status: StatusMatricula
   dataInicio?: string
   dataFim?: string
-  dataVencimento?: string
   dataCadastro?: string
 }
 

@@ -11,12 +11,9 @@ type DashboardState = {
   alunosAtivos?: number
   matriculasAtivas?: number
   pagamentosPendentes?: number
-  pagamentosVencidos?: number
   checkinsHoje?: number
   receitaMensal?: string
-  proximosVencimentos?: DashboardPaymentItem[]
   pagamentosPendentesLista?: DashboardPaymentItem[]
-  pagamentosVencidosLista?: DashboardPaymentItem[]
   pagamentosPorStatus?: Array<{ name: string; value: number }>
   checkinsPorDia?: Array<{ day: string; count: number }>
   receitaPorMes?: Array<{ month: string; value: number }>
@@ -26,7 +23,6 @@ type DashboardState = {
 export type DashboardPaymentItem = {
   id: number
   alunoNome?: string
-  dataVencimento?: string
   matriculaId?: number
   status: string
   valor: number
@@ -70,10 +66,8 @@ export function useDashboardData() {
         const alunosAtivos = alunos.filter((a) => a.status === 'ATIVO').length
         const matriculasAtivas = matriculas.filter((m) => m.status === 'ATIVA').length
         const pagamentosPendentes = pagamentos.filter((p) => p.status === 'PENDENTE').length
-        const pagamentosVencidos = pagamentos.filter((p) => p.status === 'ATRASADO').length
         const checkinsHoje = checkins.filter((c) => isToday(c.dataHora)).length
 
-        // pagamentos por status
         const pagamentosPorStatus = Object.entries(
           pagamentos.reduce<Record<string, number>>((acc, p) => {
             const s = p.status ?? 'OUTROS'
@@ -82,7 +76,6 @@ export function useDashboardData() {
           }, {}),
         ).map(([name, value]) => ({ name, value }))
 
-        // receita por mes (ultimos 6 meses incluindo atual)
         const months: Array<{ key: string; label: string }> = []
         const now = new Date()
         for (let i = 5; i >= 0; i--) {
@@ -101,11 +94,9 @@ export function useDashboardData() {
               return d.getFullYear() === y && d.getMonth() + 1 === mo
             })
             .reduce((s, p) => s + (p.valor ?? 0), 0)
-
           return { month: m.label, value: total }
         })
 
-        // checkins por dia (ultimos 7 dias)
         const daysKeys: Array<{ key: string; day: string }> = []
         for (let i = 6; i >= 0; i--) {
           const d = new Date()
@@ -113,7 +104,6 @@ export function useDashboardData() {
           const key = d.toISOString().slice(0, 10)
           daysKeys.push({ key, day: d.toLocaleDateString('pt-BR', { weekday: 'short' }) })
         }
-        // map checkins
         const checkinsMap = daysKeys.reduce<Record<string, { day: string; count: number }>>((acc, cur) => {
           acc[cur.key] = { day: cur.day, count: 0 }
           return acc
@@ -126,7 +116,6 @@ export function useDashboardData() {
         })
         const checkinsPorDia = Object.values(checkinsMap).map((v) => ({ day: v.day, count: v.count }))
 
-        // matriculas por status
         const matriculasPorStatus = Object.entries(
           matriculas.reduce<Record<string, number>>((acc, m) => {
             const s = m.status ?? 'OUTROS'
@@ -137,27 +126,8 @@ export function useDashboardData() {
 
         const pagamentosPendentesLista = pagamentos
           .filter((p) => p.status === 'PENDENTE')
-          .sort((a, b) => compareDates(a.dataVencimento, b.dataVencimento))
+          .sort((a, b) => compareDates(a.dataCadastro, b.dataCadastro))
           .slice(0, 5)
-          .map(toPaymentItem)
-
-        const pagamentosVencidosLista = pagamentos
-          .filter((p) => p.status === 'ATRASADO')
-          .sort((a, b) => compareDates(a.dataVencimento, b.dataVencimento))
-          .slice(0, 5)
-          .map(toPaymentItem)
-
-        const proximosVencimentos = pagamentos
-          .filter((p) => p.status !== 'PAGO' && p.status !== 'CANCELADO')
-          .filter((p) => p.dataVencimento)
-          .filter((p) => {
-            const d = new Date(p.dataVencimento!)
-            const now = new Date()
-            const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-            return diff >= 0 && diff <= 14
-          })
-          .sort((a, b) => compareDates(a.dataVencimento, b.dataVencimento))
-          .slice(0, 6)
           .map(toPaymentItem)
 
         setState({
@@ -165,14 +135,11 @@ export function useDashboardData() {
           alunosAtivos,
           matriculasAtivas,
           pagamentosPendentes,
-          pagamentosVencidos,
           checkinsHoje,
           receitaMensal: formatCurrency(
             receitaPorMes.reduce((s, m) => s + (m.value ?? 0), 0),
           ),
           pagamentosPendentesLista,
-          pagamentosVencidosLista,
-          proximosVencimentos,
           pagamentosPorStatus,
           receitaPorMes,
           checkinsPorDia,
@@ -199,7 +166,6 @@ export default useDashboardData
 function toPaymentItem(payment: {
   id: number
   alunoNome?: string
-  dataVencimento?: string
   matriculaId?: number
   status: string
   valor: number
@@ -207,7 +173,6 @@ function toPaymentItem(payment: {
   return {
     id: payment.id,
     alunoNome: payment.alunoNome,
-    dataVencimento: payment.dataVencimento,
     matriculaId: payment.matriculaId,
     status: payment.status,
     valor: payment.valor,

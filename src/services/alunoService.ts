@@ -9,14 +9,8 @@ export const alunoService = {
   cadastrar: (data: AlunoRequestDTO) => httpClient.post<Aluno>(ALUNOS_PATH, data),
   atualizar: (id: number, data: AlunoRequestDTO) =>
     httpClient.put<Aluno>(`${ALUNOS_PATH}/${id}`, data),
-  alterarStatus: async (id: number, status: StatusAluno) => {
-    const aluno = await httpClient.get<Aluno>(`${ALUNOS_PATH}/${id}`)
-
-    return httpClient.put<Aluno>(`${ALUNOS_PATH}/${id}`, {
-      ...aluno,
-      status,
-    })
-  },
+  alterarStatus: (id: number, status: StatusAluno) =>
+    httpClient.patch<Aluno>(`${ALUNOS_PATH}/${id}/status`, { status }),
   remover: (id: number) => httpClient.delete<void>(`${ALUNOS_PATH}/${id}`),
   inativar: (id: number) => httpClient.delete<void>(`${ALUNOS_PATH}/${id}`),
 }

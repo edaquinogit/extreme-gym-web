@@ -36,20 +36,10 @@ export function DashboardPage() {
   const dashboardActions: DashboardAction[] = []
 
   if (!data.loading && !data.error) {
-    if (data.pagamentosVencidos && data.pagamentosVencidos > 0) {
-      dashboardActions.push({
-        title: 'Existem pagamentos vencidos para acompanhar.',
-        detail: 'Priorize a recuperacao financeira e contacte os clientes com atraso.',
-        tone: 'error',
-        actionLabel: 'Ver vencidos',
-        path: withQuery(appPaths.pagamentos, { status: 'ATRASADO' }),
-      })
-    }
-
     if (data.pagamentosPendentes && data.pagamentosPendentes > 0) {
       dashboardActions.push({
-        title: 'Há pagamentos pendentes.',
-        detail: 'Verifique boletos e confirmações para reduzir inadimplência.',
+        title: 'Ha pagamentos pendentes.',
+        detail: 'Verifique confirmacoes para reduzir inadimplencia.',
         actionLabel: 'Ver pendentes',
         path: withQuery(appPaths.pagamentos, { status: 'PENDENTE' }),
       })
@@ -61,15 +51,6 @@ export function DashboardPage() {
         detail: 'Acompanhe a frequencia dos alunos para identificar fluxos de atendimento.',
         actionLabel: 'Abrir check-ins',
         path: appPaths.checkins,
-      })
-    }
-
-    if (data.proximosVencimentos && data.proximosVencimentos.length > 0) {
-      dashboardActions.push({
-        title: 'Há próximos vencimentos agendados.',
-        detail: 'Fique atento a pagamentos e renovações nos próximos 14 dias.',
-        actionLabel: 'Ver agenda',
-        path: withQuery(appPaths.pagamentos, { status: 'PENDENTE' }),
       })
     }
   }
@@ -91,7 +72,9 @@ export function DashboardPage() {
         </div>
         <div className="dashboard-welcome-badges">
           <span className="welcome-badge is-role">{user?.role ?? 'ADMIN'}</span>
-          <span className="welcome-badge is-status">{data.loading ? 'Conectando...' : data.error ? 'API indisponivel' : 'API conectada'}</span>
+          <span className="welcome-badge is-status">
+            {data.loading ? 'Conectando...' : data.error ? 'API indisponivel' : 'API conectada'}
+          </span>
           <span className="welcome-badge is-url">{API_URL}</span>
         </div>
       </section>
@@ -108,7 +91,9 @@ export function DashboardPage() {
 
         <article className="overview-panel is-compact">
           <span className="overview-label">Status</span>
-          <strong>{data.loading ? 'Carregando dados...' : data.error ? 'Erro nos dados' : 'Dados atualizados'}</strong>
+          <strong>
+            {data.loading ? 'Carregando dados...' : data.error ? 'Erro nos dados' : 'Dados atualizados'}
+          </strong>
           <p>{data.error ?? 'Dados carregados diretamente dos modulos disponiveis.'}</p>
         </article>
       </section>
@@ -145,16 +130,6 @@ export function DashboardPage() {
         />
 
         <MetricCard
-          title="Pagamentos vencidos"
-          value={data.pagamentosVencidos ?? '-'}
-          helper="Itens com vencimento atrasado"
-          loading={data.loading}
-          error={data.error ?? null}
-          actionLabel="Regularizar"
-          onAction={() => goTo(withQuery(appPaths.pagamentos, { status: 'ATRASADO' }))}
-        />
-
-        <MetricCard
           title="Check-ins hoje"
           value={data.checkinsHoje ?? '-'}
           helper="Movimento registrado no dia"
@@ -179,7 +154,7 @@ export function DashboardPage() {
         <div className="dashboard-actions-header">
           <div>
             <span className="overview-label">Resumo operacional</span>
-            <h2>Atenção imediata</h2>
+            <h2>Atencao imediata</h2>
             <p>Os principais pontos abaixo ajudam a priorizar as decisoes de gestao do dia.</p>
           </div>
         </div>
@@ -190,7 +165,7 @@ export function DashboardPage() {
               <LoadingSpinner size={18} />
               <div>
                 <strong>Carregando recomendacoes do painel</strong>
-                <p>Os dados estão sendo carregados diretamente da API.</p>
+                <p>Os dados estao sendo carregados diretamente da API.</p>
               </div>
             </div>
           ) : data.error ? (
@@ -200,7 +175,10 @@ export function DashboardPage() {
             </div>
           ) : dashboardActions.length > 0 ? (
             dashboardActions.map((action) => (
-              <div key={action.title} className={`dashboard-action-item ${action.tone === 'error' ? 'dashboard-action-item--error' : ''}`}>
+              <div
+                key={action.title}
+                className={`dashboard-action-item ${action.tone === 'error' ? 'dashboard-action-item--error' : ''}`}
+              >
                 <div className="dashboard-action-icon" aria-hidden />
                 <div>
                   <strong>{action.title}</strong>
@@ -216,7 +194,7 @@ export function DashboardPage() {
               <div className="dashboard-action-icon" aria-hidden />
               <div>
                 <strong>Painel pronto para uso</strong>
-                <p>Os dados estão atualizados e o fluxo operacional está visivel.</p>
+                <p>Os dados estao atualizados e o fluxo operacional esta visivel.</p>
               </div>
             </div>
           )}
@@ -225,15 +203,8 @@ export function DashboardPage() {
 
       <section className="dashboard-section">
         <h2>Fila operacional</h2>
-        <p className="section-description">Itens prontos para acao, com foco em cobrança e vencimentos proximos.</p>
+        <p className="section-description">Itens prontos para acao, com foco em pagamentos pendentes.</p>
         <div className="operations-grid">
-          <PaymentQueueCard
-            title="Cobranças vencidas"
-            emptyMessage="Nenhum pagamento vencido na fila."
-            items={data.pagamentosVencidosLista ?? []}
-            loading={data.loading}
-            onViewAll={() => goTo(withQuery(appPaths.pagamentos, { status: 'ATRASADO' }))}
-          />
           <PaymentQueueCard
             title="Pagamentos pendentes"
             emptyMessage="Nenhum pagamento pendente na fila."
@@ -241,87 +212,78 @@ export function DashboardPage() {
             loading={data.loading}
             onViewAll={() => goTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
           />
-          <PaymentQueueCard
-            title="Vencimentos nos proximos 14 dias"
-            emptyMessage="Nenhum vencimento previsto para os proximos 14 dias."
-            items={data.proximosVencimentos ?? []}
-            loading={data.loading}
-            onViewAll={() => goTo(withQuery(appPaths.pagamentos, { status: 'PENDENTE' }))}
-          />
         </div>
       </section>
 
       <section className="dashboard-section">
-        <h2>Visão gerencial</h2>
-        <p className="section-description">Indicadores que mostram a situação financeira e o movimento de acesso.</p>
+        <h2>Visao gerencial</h2>
+        <p className="section-description">Indicadores que mostram a situacao financeira e o movimento de acesso.</p>
         <div className="charts-grid">
-          <ChartCard title="Status dos pagamentos" description="Distribuição dos pagamentos por situação financeira." loading={data.loading} error={data.error ?? null}>
+          <ChartCard
+            title="Status dos pagamentos"
+            description="Distribuicao dos pagamentos por situacao financeira."
+            loading={data.loading}
+            error={data.error ?? null}
+          >
             {data.pagamentosPorStatus && data.pagamentosPorStatus.length > 0 ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
                 <PaymentsStatusChart data={data.pagamentosPorStatus} />
               </Suspense>
             ) : (
-              <EmptyChartState message="Nenhum pagamento registrado ainda. Registre cobranças para visualizar a distribuição financeira." />
+              <EmptyChartState message="Nenhum pagamento registrado ainda. Registre cobrancas para visualizar a distribuicao financeira." />
             )}
           </ChartCard>
 
-          <ChartCard title="Check-ins últimos 7 dias" description="Movimento registrado na academia nos últimos 7 dias." loading={data.loading} error={data.error ?? null}>
+          <ChartCard
+            title="Check-ins ultimos 7 dias"
+            description="Movimento registrado na academia nos ultimos 7 dias."
+            loading={data.loading}
+            error={data.error ?? null}
+          >
             {data.checkinsPorDia && data.checkinsPorDia.length > 0 ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
                 <CheckinsLast7DaysChart data={data.checkinsPorDia} />
               </Suspense>
             ) : (
-              <EmptyChartState message="Nenhum check-in encontrado nos últimos 7 dias. Os movimentos aparecerão aqui conforme os alunos acessarem a academia." />
+              <EmptyChartState message="Nenhum check-in encontrado nos ultimos 7 dias." />
             )}
           </ChartCard>
         </div>
       </section>
 
       <section className="dashboard-section">
-        <h2>Financeiro e matrículas</h2>
+        <h2>Financeiro e matriculas</h2>
         <p className="section-description">Dados financeiros e de matriculas para apoiar o controle operacional.</p>
         <div className="charts-grid">
-          <ChartCard title="Receita (últimos 6 meses)" description="Receita confirmada a partir de pagamentos pagos." loading={data.loading} error={data.error ?? null}>
+          <ChartCard
+            title="Receita (ultimos 6 meses)"
+            description="Receita confirmada a partir de pagamentos pagos."
+            loading={data.loading}
+            error={data.error ?? null}
+          >
             {data.receitaPorMes && data.receitaPorMes.some((m) => m.value > 0) ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
                 <RevenueByMonthChart data={data.receitaPorMes} />
               </Suspense>
             ) : (
-              <EmptyChartState message="Ainda não há receita confirmada nos últimos 6 meses. Pagamentos PAGO serão exibidos aqui." />
+              <EmptyChartState message="Ainda nao ha receita confirmada nos ultimos 6 meses. Pagamentos PAGO serao exibidos aqui." />
             )}
           </ChartCard>
 
-          <ChartCard title="Matrículas por status" description="Situação atual das matrículas cadastradas." loading={data.loading} error={data.error ?? null}>
+          <ChartCard
+            title="Matriculas por status"
+            description="Situacao atual das matriculas cadastradas."
+            loading={data.loading}
+            error={data.error ?? null}
+          >
             {data.matriculasPorStatus && data.matriculasPorStatus.length > 0 ? (
-              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando gráfico...</small></div>}>
+              <Suspense fallback={<div className="chart-loading-fallback"><LoadingSpinner size={18} /><small>Carregando grafico...</small></div>}>
                 <MatriculasStatusChart data={data.matriculasPorStatus} />
               </Suspense>
             ) : (
-              <EmptyChartState message="Nenhuma matrícula encontrada. Cadastre matriculas para acompanhar o desempenho." />
+              <EmptyChartState message="Nenhuma matricula encontrada. Cadastre matriculas para acompanhar o desempenho." />
             )}
           </ChartCard>
-        </div>
-        <div className="content-panel upcoming-due-panel">
-          <strong>Vencimentos proximos</strong>
-          {data.loading ? (
-            <small>Carregando...</small>
-          ) : data.proximosVencimentos && data.proximosVencimentos.length > 0 ? (
-            <div className="upcoming-due-list">
-              {data.proximosVencimentos.map((p) => (
-                <div key={p.id} className="upcoming-due-item">
-                  <div>
-                    <div>{p.alunoNome ?? '—'}</div>
-                    <small>{p.dataVencimento}</small>
-                  </div>
-                  <div>{p.valor ? p.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-'}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="upcoming-due-empty">
-              <small>Nenhum vencimento proximo nos proximos 14 dias.</small>
-            </div>
-          )}
         </div>
       </section>
     </div>
@@ -366,9 +328,6 @@ function PaymentQueueCard({
             >
               <span>
                 <strong>{item.alunoNome ?? `Pagamento #${item.id}`}</strong>
-                <small>
-                  {item.dataVencimento ? `Vence em ${formatDateOnly(item.dataVencimento)}` : 'Sem vencimento informado'}
-                </small>
               </span>
               <span className="operation-item-side">
                 <StatusBadge status={item.status} />
@@ -387,16 +346,6 @@ function PaymentQueueCard({
 function withQuery(path: string, params: Record<string, string>) {
   const search = new URLSearchParams(params)
   return `${path}?${search.toString()}`
-}
-
-function formatDateOnly(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return new Intl.DateTimeFormat('pt-BR').format(date)
 }
 
 function formatMoney(value: number) {

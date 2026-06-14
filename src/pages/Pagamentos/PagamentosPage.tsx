@@ -1,39 +1,60 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useCurrentSearch } from '../../app/routes/router'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { DataTable } from '../../components/tables/DataTable'
-import { TablePagination } from '../../components/tables/TablePagination'
+import { FormField } from '../../components/ui/FormField'
+import { Modal } from '../../components/ui/Modal'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { StateMessage } from '../../components/ui/StateMessage'
 import { StatusBadge } from '../../components/ui/StatusBadge'
+import { TablePagination } from '../../components/tables/TablePagination'
+import { useApiError } from '../../hooks/useApiError'
 import { useResourceList } from '../../hooks/useResourceList'
+import { matriculaService } from '../../services/matriculaService'
 import { pagamentoService } from '../../services/pagamentoService'
-import type { StatusPagamento } from '../../types/pagamento'
+import type { Matricula } from '../../types/matricula'
+import type { FormaPagamento, Pagamento, PagamentoRequestDTO, StatusPagamento } from '../../types/pagamento'
 import { formatCurrency } from '../../utils/formatCurrency'
 import { formatDate } from '../../utils/formatDate'
 
 const PAGE_SIZE = 8
-const STATUS_FILTERS: Array<StatusPagamento | 'TODOS'> = [
-  'TODOS',
-  'PENDENTE',
-  'ATRASADO',
-  'PAGO',
-  'CANCELADO',
-]
+const STATUS_FILTERS: Array<StatusPagamento | 'TODOS'> = ['TODOS', 'PENDENTE', 'PAGO', 'CANCELADO']
+const FORMAS_PAGAMENTO: FormaPagamento[] = ['PIX', 'DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO']
+
+type PagamentoFormState = {
+  matriculaId: string
+  valor: string
+  formaPagamento: FormaPagamento | ''
+}
+
+const EMPTY_FORM: PagamentoFormState = { matriculaId: '', valor: '', formaPagamento: '' }
 
 export function PagamentosPage() {
-  const { data: pagamentos, errorMessage, isLoading } = useResourceList({
-    load: pagamentoService.listar,
-  })
+  const {
+    data: pagamentos,
+    setData: setPagamentos,
+    errorMessage,
+    isLoading,
+    reload,
+  } = useResourceList({ load: pagamentoService.listar })
+  const { getErrorMessage } = useApiError()
   const currentSearch = useCurrentSearch()
   const [query, setQuery] = useState(() => getInitialSearchParam('q'))
   const [statusFilter, setStatusFilter] = useState<StatusPagamento | 'TODOS'>(() =>
     getInitialStatusFilter(),
   )
   const [page, setPage] = useState(1)
+  const [cancelingPagamento, setCancelingPagamento] = useState<Pagamento | null>(null)
+  const [formData, setFormData] = useState<PagamentoFormState>(EMPTY_FORM)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isCanceling, setIsCanceling] = useState(false)
+  const [matriculasAtivas, setMatriculasAtivas] = useState<Matricula[]>([])
 
   const filteredPagamentos = useMemo(() => {
     const normalizedQuery = normalizeText(query)
-
     return pagamentos.filter((pagamento) => {
       const matchesStatus = statusFilter === 'TODOS' || pagamento.status === statusFilter
       const matchesQuery = normalizedQuery
@@ -45,22 +66,17 @@ export function PagamentosPage() {
               pagamento.valor,
               pagamento.formaPagamento ?? '',
               pagamento.status,
-              pagamento.dataVencimento ?? '',
               pagamento.dataPagamento ?? '',
             ].join(' '),
           ).includes(normalizedQuery)
         : true
-
       return matchesStatus && matchesQuery
     })
   }, [pagamentos, query, statusFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredPagamentos.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
-  const visiblePagamentos = filteredPagamentos.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
-  )
+  const visiblePagamentos = filteredPagamentos.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -68,16 +84,97 @@ export function PagamentosPage() {
       setStatusFilter(getStatusFilterFromSearch(currentSearch))
       setPage(1)
     }, 0)
-
     return () => window.clearTimeout(timeoutId)
   }, [currentSearch])
+
+  async function openCreateModal() {
+    setFormData(EMPTY_FORM)
+    setFormError(null)
+    setActionMessage(null)
+    const all = await matriculaService.listar()
+    setMatriculasAtivas(all.filter((m) => m.status === 'ATIVA'))
+    setIsFormOpen(true)
+  }
+
+  function closeForm() {
+    setFormError(null)
+    setIsFormOpen(false)
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setFormError(null)
+    setActionMessage(null)
+
+    const valor = parseFloat(formData.valor.replace(',', '.'))
+
+    if (!formData.matriculaId) {
+      setFormError('Selecione uma matricula.')
+      return
+    }
+    if (isNaN(valor) || valor <= 0) {
+      setFormError('Informe um valor valido.')
+      return
+    }
+    if (!formData.formaPagamento) {
+      setFormError('Selecione a forma de pagamento.')
+      return
+    }
+
+    const payload: PagamentoRequestDTO = {
+      matriculaId: Number(formData.matriculaId),
+      valor,
+      formaPagamento: formData.formaPagamento as FormaPagamento,
+    }
+
+    try {
+      setIsSaving(true)
+      const saved = await pagamentoService.registrar(payload)
+      setPagamentos((current) => [saved, ...current])
+      setActionMessage('Pagamento registrado com sucesso.')
+      closeForm()
+    } catch (error) {
+      setFormError(getErrorMessage(error))
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleCancelar() {
+    if (!cancelingPagamento) return
+    try {
+      setIsCanceling(true)
+      setActionMessage(null)
+      const updated = await pagamentoService.cancelar(cancelingPagamento.id)
+      setPagamentos((current) =>
+        current.map((p) => (p.id === updated.id ? updated : p)),
+      )
+      setActionMessage('Pagamento cancelado.')
+      setCancelingPagamento(null)
+      void reload()
+    } catch (error) {
+      setActionMessage(getErrorMessage(error))
+      setCancelingPagamento(null)
+    } finally {
+      setIsCanceling(false)
+    }
+  }
 
   return (
     <>
       <PageHeader
         eyebrow="Pagamentos"
         title="Controle financeiro"
-        description="Tabela preparada para status, valor, vencimento e relacionamento com aluno ou matricula."
+        description="Registre pagamentos e gerencie o status financeiro dos alunos."
+        action={
+          <button
+            className="primary-button compact"
+            type="button"
+            onClick={() => void openCreateModal()}
+          >
+            Registrar pagamento
+          </button>
+        }
       />
 
       <div className="toolbar">
@@ -107,49 +204,132 @@ export function PagamentosPage() {
         <span>{filteredPagamentos.length} pagamento(s)</span>
       </div>
 
+      {actionMessage && (
+        <div className="alert alert--success page-toast" role="status">
+          {actionMessage}
+        </div>
+      )}
+
       <section className="content-panel">
         {isLoading && <StateMessage title="Carregando pagamentos..." />}
         {!isLoading && errorMessage && (
           <StateMessage title="Nao foi possivel carregar os pagamentos" description={errorMessage} />
         )}
         {!isLoading && !errorMessage && pagamentos.length === 0 && (
-          <StateMessage title="Nenhum pagamento encontrado" description="Os pagamentos da API aparecerao aqui." />
+          <StateMessage title="Nenhum pagamento encontrado" description="Registre o primeiro pagamento." />
         )}
         {!isLoading && !errorMessage && pagamentos.length > 0 && filteredPagamentos.length === 0 && (
-          <StateMessage title="Nenhum pagamento corresponde aos filtros" description="Ajuste a busca ou limpe o filtro de status." />
+          <StateMessage title="Nenhum pagamento corresponde aos filtros" description="Ajuste a busca ou o filtro de status." />
         )}
         {!isLoading && !errorMessage && filteredPagamentos.length > 0 && (
           <>
-          <DataTable headers={['ID', 'Aluno', 'Matricula', 'Valor', 'Status', 'Vencimento', 'Pagamento']}>
-            {visiblePagamentos.map((pagamento) => (
-              <tr key={pagamento.id}>
-                <td>{pagamento.id}</td>
-                <td>{pagamento.alunoNome ?? '-'}</td>
-                <td>{pagamento.matriculaId ?? '-'}</td>
-                <td>{formatCurrency(pagamento.valor)}</td>
-                <td><StatusBadge status={pagamento.status} /></td>
-                <td>{formatDate(pagamento.dataVencimento)}</td>
-                <td>{formatDate(pagamento.dataPagamento ?? undefined)}</td>
-              </tr>
-            ))}
-          </DataTable>
-          <TablePagination
-            page={safePage}
-            pageSize={PAGE_SIZE}
-            totalItems={filteredPagamentos.length}
-            onPageChange={setPage}
-          />
+            <DataTable headers={['ID', 'Aluno', 'Matricula', 'Valor', 'Forma', 'Status', 'Pagamento', 'Acoes']}>
+              {visiblePagamentos.map((pagamento) => (
+                <tr key={pagamento.id}>
+                  <td>{pagamento.id}</td>
+                  <td>{pagamento.alunoNome ?? '-'}</td>
+                  <td>{pagamento.matriculaId ?? '-'}</td>
+                  <td>{formatCurrency(pagamento.valor)}</td>
+                  <td>{pagamento.formaPagamento ? formatStatus(pagamento.formaPagamento) : '-'}</td>
+                  <td><StatusBadge status={pagamento.status} /></td>
+                  <td>{formatDate(pagamento.dataPagamento ?? undefined)}</td>
+                  <td>
+                    {pagamento.status !== 'CANCELADO' && (
+                      <button
+                        className="btn-danger btn-sm"
+                        type="button"
+                        onClick={() => setCancelingPagamento(pagamento)}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
+            <TablePagination
+              page={safePage}
+              pageSize={PAGE_SIZE}
+              totalItems={filteredPagamentos.length}
+              onPageChange={setPage}
+            />
           </>
         )}
       </section>
+
+      <Modal isOpen={isFormOpen} title="Registrar pagamento" onClose={closeForm}>
+        <form onSubmit={(event) => void handleSubmit(event)}>
+          <FormField label="Matricula ativa">
+            <select
+              className="form-control"
+              value={formData.matriculaId}
+              onChange={(event) => setFormData((f) => ({ ...f, matriculaId: event.target.value }))}
+            >
+              <option value="">Selecione uma matricula...</option>
+              {matriculasAtivas.map((m) => (
+                <option key={m.id} value={m.id}>
+                  #{m.id} — {m.alunoNome ?? 'Aluno'} / {m.planoNome ?? 'Plano'}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Valor (R$)">
+            <input
+              className="form-control"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={formData.valor}
+              onChange={(event) => setFormData((f) => ({ ...f, valor: event.target.value }))}
+            />
+          </FormField>
+          <FormField label="Forma de pagamento">
+            <select
+              className="form-control"
+              value={formData.formaPagamento}
+              onChange={(event) =>
+                setFormData((f) => ({ ...f, formaPagamento: event.target.value as FormaPagamento }))
+              }
+            >
+              <option value="">Selecione...</option>
+              {FORMAS_PAGAMENTO.map((forma) => (
+                <option key={forma} value={forma}>
+                  {formatStatus(forma)}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          {formError && <p className="form-error">{formError}</p>}
+
+          <div className="form-actions">
+            <button className="ghost-button" type="button" disabled={isSaving} onClick={closeForm}>
+              Cancelar
+            </button>
+            <button className="primary-button" type="submit" disabled={isSaving}>
+              {isSaving ? 'Registrando...' : 'Registrar'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(cancelingPagamento)}
+        title="Cancelar pagamento"
+        description={`Confirma o cancelamento do pagamento #${cancelingPagamento?.id ?? ''}?`}
+        confirmLabel="Cancelar pagamento"
+        isLoading={isCanceling}
+        onCancel={() => setCancelingPagamento(null)}
+        onConfirm={() => void handleCancelar()}
+      />
     </>
   )
 }
 
-function normalizeText(value: string) {
-  return value
+function normalizeText(value: string | number) {
+  return String(value)
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
 }
 
@@ -171,7 +351,6 @@ function getSearchParam(search: string, key: string) {
 
 function getStatusFilterFromSearch(search: string): StatusPagamento | 'TODOS' {
   const status = new URLSearchParams(search).get('status')
-
   return STATUS_FILTERS.includes(status as StatusPagamento | 'TODOS')
     ? (status as StatusPagamento | 'TODOS')
     : 'TODOS'

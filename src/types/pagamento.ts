@@ -1,4 +1,4 @@
-export type StatusPagamento = 'PAGO' | 'PENDENTE' | 'ATRASADO' | 'CANCELADO'
+export type StatusPagamento = 'PAGO' | 'PENDENTE' | 'CANCELADO'
 
 export type FormaPagamento =
   | 'PIX'
@@ -8,9 +8,9 @@ export type FormaPagamento =
 
 export type Pagamento = {
   id: number
+  matriculaId?: number
   alunoId?: number
   alunoNome?: string
-  matriculaId?: number
   planoId?: number
   planoNome?: string
   valor: number
@@ -18,7 +18,6 @@ export type Pagamento = {
   status: StatusPagamento
   dataPagamento?: string | null
   dataCadastro?: string
-  dataVencimento?: string
 }
 
 export type PagamentoRequestDTO = {
