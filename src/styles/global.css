@@ -3320,3 +3320,342 @@ h1 {
 
   .api-status-dot.is-ok { animation: none; }
 }
+
+/* ─── Perfil do aluno (redesign premium) ────────────────────────────────────── */
+
+.perfil-page {
+  display: grid;
+  gap: 20px;
+  animation: slideUp 360ms ease both;
+}
+
+.perfil-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 80px 0;
+  color: var(--color-text-muted);
+}
+
+/* Breadcrumb */
+.perfil-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.perfil-breadcrumb-sep {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.perfil-breadcrumb-current {
+  color: var(--color-text-soft);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* Hero card */
+.perfil-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #0f1e15 0%, #0b1610 55%, #071009 100%);
+  border: 1px solid rgba(99, 200, 13, 0.13);
+  box-shadow: 0 0 0 1px rgba(99, 200, 13, 0.05), var(--shadow-panel);
+  position: relative;
+  overflow: hidden;
+}
+
+.perfil-hero::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -5%;
+  width: 40%;
+  height: 180%;
+  background: radial-gradient(ellipse, rgba(99, 200, 13, 0.06) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.perfil-hero-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99, 200, 13, 0.2), rgba(99, 200, 13, 0.08));
+  border: 2px solid rgba(99, 200, 13, 0.25);
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  letter-spacing: -0.02em;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.perfil-hero-info {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.perfil-hero-name {
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #fff;
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perfil-hero-meta {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 4px;
+}
+
+.perfil-hero-since {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.32);
+  margin: 0;
+}
+
+.perfil-hero-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Content grid */
+.perfil-content-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.perfil-col-left,
+.perfil-col-right {
+  display: grid;
+  gap: 16px;
+}
+
+/* Section title with count */
+.perfil-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 16px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-strong);
+}
+
+.perfil-section-count {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* ── Credenciais de acesso ──────────────────────────────────────────────────── */
+
+.credencial-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.credencial-header .perfil-section-title {
+  margin-bottom: 0;
+}
+
+.credencial-empty {
+  padding: 12px 0 4px;
+}
+
+.credencial-empty p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--color-text-muted);
+}
+
+.credencial-empty-hint {
+  margin-top: 6px !important;
+  font-size: 0.78rem !important;
+  line-height: 1.5;
+}
+
+.credencial-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.credencial-list--muted { opacity: 0.65; }
+
+.credencial-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(99, 200, 13, 0.14);
+  background: rgba(99, 200, 13, 0.04);
+  animation: slideUp 280ms ease both;
+}
+
+.credencial-item--muted {
+  border-color: var(--color-border-soft);
+  background: var(--color-bg-soft);
+}
+
+.credencial-item-icon {
+  font-size: 1.1rem;
+  flex: 0 0 auto;
+}
+
+.credencial-item-info {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.credencial-item-tipo {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.credencial-item-data {
+  font-size: 0.73rem;
+  color: var(--color-text-muted);
+}
+
+.credencial-historico {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.credencial-historico summary {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 10px;
+}
+
+/* PIN form */
+.credencial-pin-form {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(99, 200, 13, 0.18);
+  background: rgba(99, 200, 13, 0.03);
+  display: grid;
+  gap: 12px;
+  animation: slideUp 240ms ease both;
+}
+
+.credencial-pin-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.credencial-pin-form-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--color-primary-strong);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.credencial-pin-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+.credencial-pin-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.credencial-pin-input-row .input-field {
+  flex: 1;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+}
+
+.credencial-pin-error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.credencial-pin-success {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--color-primary-strong);
+  font-weight: 700;
+  animation: slideUp 200ms ease both;
+}
+
+/* badge variants */
+.badge-primary {
+  background: rgba(99, 200, 13, 0.12);
+  color: var(--color-primary-strong);
+  border: 1px solid rgba(99, 200, 13, 0.22);
+}
+
+.badge-muted {
+  background: var(--color-bg-soft);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-soft);
+}
+
+/* btn-xs */
+.btn-xs {
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  min-height: 26px;
+}
+
+/* Responsive — perfil */
+@media (max-width: 900px) {
+  .perfil-content-grid { grid-template-columns: 1fr; }
+  .perfil-hero { flex-wrap: wrap; gap: 18px; }
+  .perfil-hero-badges { flex-direction: row; align-items: center; }
+  .perfil-hero-name { font-size: 1.5rem; }
+}
+
+@media (max-width: 520px) {
+  .perfil-hero { padding: 20px; }
+  .perfil-hero-avatar { width: 56px; height: 56px; font-size: 1.2rem; }
+}

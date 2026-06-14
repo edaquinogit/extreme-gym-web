@@ -52,8 +52,13 @@ async function request<TResponse>(
 
   if (!response.ok) {
     if (response.status === 401) {
+      // Only dispatch if token was present — prevents duplicate dispatches from
+      // parallel requests that all fail with 401 simultaneously.
+      const hadToken = Boolean(getStoredToken())
       clearAuthStorage()
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+      if (hadToken) {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+      }
     }
 
     throw new HttpError(
