@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { StateMessage } from '../../components/ui/StateMessage'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { useApiError } from '../../hooks/useApiError'
 import { navigateTo } from '../../app/routes/router'
 import { appPaths } from '../../app/routes/paths'
@@ -125,24 +126,67 @@ export function AlunoPerfilPage({ alunoId }: { alunoId: number }) {
       data={data}
       alunoId={alunoId}
       onCredenciaisChange={(credenciais) => setData((d) => d ? { ...d, credenciais } : d)}
+      onMatriculasChange={(matriculas) => setData((d) => d ? { ...d, matriculas } : d)}
     />
   )
 }
 
 /* ── Conteúdo principal ─────────────────────────────────────────────────────── */
 
+type MatriculaActionState =
+  | { kind: 'idle' }
+  | { kind: 'canceling' }
+  | { kind: 'reactivating'; id: number }
+
 function PerfilContent({
   data,
   alunoId,
   onCredenciaisChange,
+  onMatriculasChange,
 }: {
   data: PerfilData
   alunoId: number
   onCredenciaisChange: (credenciais: CredencialAcesso[]) => void
+  onMatriculasChange: (matriculas: Matricula[]) => void
 }) {
   const { aluno, matriculas, pagamentos, checkins, credenciais } = data
   const matriculaAtiva = matriculas.find((m) => m.status === 'ATIVA')
   const historico = matriculas.filter((m) => m.status !== 'ATIVA')
+  const { getErrorMessage } = useApiError()
+
+  const [matriculaState, setMatriculaState] = useState<MatriculaActionState>({ kind: 'idle' })
+  const [matriculaError, setMatriculaError] = useState<string | null>(null)
+  const [cancelandoMatricula, setCancelandoMatricula] = useState<Matricula | null>(null)
+
+  async function handleCancelarMatriculaAtiva() {
+    if (!cancelandoMatricula) return
+    setMatriculaState({ kind: 'canceling' })
+    setMatriculaError(null)
+
+    try {
+      const atualizada = await matriculaService.cancelar(cancelandoMatricula.id)
+      onMatriculasChange(matriculas.map((m) => (m.id === atualizada.id ? atualizada : m)))
+      setCancelandoMatricula(null)
+    } catch (err) {
+      setMatriculaError(getErrorMessage(err))
+    } finally {
+      setMatriculaState({ kind: 'idle' })
+    }
+  }
+
+  async function handleReativarMatricula(id: number) {
+    setMatriculaState({ kind: 'reactivating', id })
+    setMatriculaError(null)
+
+    try {
+      const atualizada = await matriculaService.reativar(id)
+      onMatriculasChange(matriculas.map((m) => (m.id === atualizada.id ? atualizada : m)))
+    } catch (err) {
+      setMatriculaError(getErrorMessage(err))
+    } finally {
+      setMatriculaState({ kind: 'idle' })
+    }
+  }
 
   const initials = aluno.nome
     .split(' ')
@@ -251,7 +295,20 @@ function PerfilContent({
 
           {/* Matrícula ativa */}
           <section className="content-panel perfil-section">
-            <h3 className="perfil-section-title">Matricula ativa</h3>
+            <div className="credencial-header">
+              <h3 className="perfil-section-title">Matricula ativa</h3>
+              {matriculaAtiva && (
+                <button
+                  type="button"
+                  className="btn-danger btn-xs"
+                  disabled={matriculaState.kind === 'canceling'}
+                  onClick={() => { setMatriculaError(null); setCancelandoMatricula(matriculaAtiva) }}
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+
             {matriculaAtiva ? (
               <dl className="perfil-dl">
                 <div className="perfil-dl-row">
@@ -275,12 +332,14 @@ function PerfilContent({
               <p className="perfil-empty">Nenhuma matricula ativa no momento.</p>
             )}
 
+            {matriculaError && <p className="form-error">{matriculaError}</p>}
+
             {historico.length > 0 && (
               <details className="perfil-historico-toggle">
                 <summary>Historico de matriculas ({historico.length})</summary>
                 <table className="perfil-table">
                   <thead>
-                    <tr><th>Plano</th><th>Inicio</th><th>Fim</th><th>Status</th></tr>
+                    <tr><th>Plano</th><th>Inicio</th><th>Fim</th><th>Status</th><th>Acoes</th></tr>
                   </thead>
                   <tbody>
                     {historico.map((m) => (
@@ -289,6 +348,18 @@ function PerfilContent({
                         <td>{formatDate(m.dataInicio)}</td>
                         <td>{formatDate(m.dataFim)}</td>
                         <td><StatusBadge status={m.status} /></td>
+                        <td>
+                          <button
+                            type="button"
+                            className="primary-button btn-xs"
+                            disabled={matriculaState.kind === 'reactivating' && matriculaState.id === m.id}
+                            onClick={() => void handleReativarMatricula(m.id)}
+                          >
+                            {matriculaState.kind === 'reactivating' && matriculaState.id === m.id
+                              ? <LoadingSpinner size={12} />
+                              : 'Reativar'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -358,17 +429,31 @@ function PerfilContent({
 
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(cancelandoMatricula)}
+        title="Cancelar matricula"
+        description={`Confirma o cancelamento da matricula ativa de ${aluno.nome}?`}
+        confirmLabel="Cancelar matricula"
+        isLoading={matriculaState.kind === 'canceling'}
+        onCancel={() => setCancelandoMatricula(null)}
+        onConfirm={() => void handleCancelarMatriculaAtiva()}
+      />
     </div>
   )
 }
 
 /* ── Credenciais de acesso ───────────────────────────────────────────────────── */
 
+const FACE_POLL_INTERVAL_MS = 4000
+const FACE_POLL_TIMEOUT_MS = 120000
+
 type CredenciaisState =
   | { kind: 'idle' }
   | { kind: 'adding' }
   | { kind: 'saving' }
   | { kind: 'revoking'; id: number }
+  | { kind: 'awaiting-face' }
 
 function CredenciaisSection({
   alunoId,
@@ -383,9 +468,49 @@ function CredenciaisSection({
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState<string | null>(null)
   const [pinSuccess, setPinSuccess] = useState(false)
+  const [faceError, setFaceError] = useState<string | null>(null)
   const { getErrorMessage } = useApiError()
 
   const ativas = credenciais.filter((c) => c.status === 'ATIVA')
+  const temFaceAtiva = ativas.some((c) => c.tipo === 'FACE_TEMPLATE')
+
+  useEffect(() => {
+    if (state.kind !== 'awaiting-face') return
+
+    let cancelled = false
+    const idsConhecidos = new Set(credenciais.map((c) => c.id))
+
+    const intervalId = window.setInterval(() => {
+      credencialService.listarPorAluno(alunoId)
+        .then((atual) => {
+          if (cancelled) return
+          const nova = atual.find(
+            (c) => c.tipo === 'FACE_TEMPLATE' && c.status === 'ATIVA' && !idsConhecidos.has(c.id),
+          )
+          if (nova) {
+            onChange(atual)
+            setState({ kind: 'idle' })
+          }
+        })
+        .catch(() => {
+          // falha pontual de rede — mantem a espera ate o timeout
+        })
+    }, FACE_POLL_INTERVAL_MS)
+
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled) {
+        setFaceError('Tempo esgotado aguardando a captura na catraca. Tente novamente.')
+        setState({ kind: 'idle' })
+      }
+    }, FACE_POLL_TIMEOUT_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      window.clearTimeout(timeoutId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.kind, alunoId])
 
   async function handleAddPin(e: React.FormEvent) {
     e.preventDefault()
@@ -435,13 +560,24 @@ function CredenciaisSection({
       <div className="credencial-header">
         <h3 className="perfil-section-title">Identificacao Catraca</h3>
         {state.kind === 'idle' && (
-          <button
-            type="button"
-            className="ghost-button compact"
-            onClick={() => { setState({ kind: 'adding' }); setPinError(null); setPinSuccess(false) }}
-          >
-            + Adicionar
-          </button>
+          <div className="credencial-header-actions">
+            <button
+              type="button"
+              className="ghost-button compact"
+              onClick={() => { setState({ kind: 'adding' }); setPinError(null); setPinSuccess(false) }}
+            >
+              + Senha/PIN
+            </button>
+            {!temFaceAtiva && (
+              <button
+                type="button"
+                className="ghost-button compact"
+                onClick={() => { setFaceError(null); setState({ kind: 'awaiting-face' }) }}
+              >
+                + Face ID
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -553,6 +689,28 @@ function CredenciaisSection({
       {pinSuccess && (
         <p className="credencial-pin-success">Senha cadastrada com sucesso!</p>
       )}
+
+      {/* Captura de Face ID via catraca */}
+      {state.kind === 'awaiting-face' && (
+        <div className="face-enrollment">
+          <div className="face-pulse" aria-hidden="true">👤</div>
+          <p className="face-waiting-title">Aguardando captura na catraca...</p>
+          <p className="credencial-pin-hint">
+            Leve o aluno ate a catraca e siga as instrucoes do dispositivo para
+            capturar o rosto. Esta tela atualiza automaticamente quando a
+            captura for concluida.
+          </p>
+          <button
+            type="button"
+            className="ghost-button compact"
+            onClick={() => setState({ kind: 'idle' })}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {faceError && <p className="credencial-pin-error">{faceError}</p>}
     </section>
   )
 }

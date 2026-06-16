@@ -49,6 +49,7 @@ export function MatriculasPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isCanceling, setIsCanceling] = useState(false)
+  const [reactivatingId, setReactivatingId] = useState<number | null>(null)
   const [alunos, setAlunos] = useState<Array<{ id: number; nome: string }>>([])
   const [planos, setPlanos] = useState<Array<{ id: number; nome: string }>>([])
 
@@ -153,6 +154,22 @@ export function MatriculasPage() {
     }
   }
 
+  async function handleReativar(matricula: Matricula) {
+    try {
+      setReactivatingId(matricula.id)
+      setActionMessage(null)
+      const updated = await matriculaService.reativar(matricula.id)
+      setMatriculas((current) =>
+        current.map((m) => (m.id === updated.id ? updated : m)),
+      )
+      setActionMessage('Matricula reativada.')
+    } catch (error) {
+      setActionMessage(getErrorMessage(error))
+    } finally {
+      setReactivatingId(null)
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -233,6 +250,16 @@ export function MatriculasPage() {
                         onClick={() => setCancelingMatricula(matricula)}
                       >
                         Cancelar
+                      </button>
+                    )}
+                    {matricula.status !== 'ATIVA' && (
+                      <button
+                        className="primary-button btn-sm"
+                        type="button"
+                        disabled={reactivatingId === matricula.id}
+                        onClick={() => void handleReativar(matricula)}
+                      >
+                        {reactivatingId === matricula.id ? 'Reativando...' : 'Reativar'}
                       </button>
                     )}
                   </td>
